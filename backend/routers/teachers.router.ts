@@ -5,4 +5,5 @@ const router = express.Router();
 
 router.get('/', getAllTeachers);
 
+
 module.exports = router;
