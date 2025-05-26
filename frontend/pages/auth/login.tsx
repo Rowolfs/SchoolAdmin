@@ -16,7 +16,7 @@ const LoginPage = () => {
     try {
       const response = await api.post('/auth/login', { email, password })
       localStorage.setItem('token', response.data.token)
-      router.push('/teachers')
+      router.push('/dashboard')
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login failed')
     }

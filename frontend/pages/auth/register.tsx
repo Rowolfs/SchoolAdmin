@@ -32,7 +32,7 @@ const RegisterPage = () => {
         patronymic
       })
       localStorage.setItem('token', response.data.token)
-      router.push('/teachers')
+      router.push('/dashboard')
     } catch (err: any) {
 
     // напиши сообшение о том что пльзователь уже зарегистрирован

@@ -2,7 +2,8 @@ const express = require("express");
 const { Request, Response, NextFunction } = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const prisma = require("../prisma/client");
+const PrismaSingelton = require('../prisma/client');
+const prisma = PrismaSingelton.getInstance();
 const dotenv = require("dotenv");
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET
@@ -53,7 +54,12 @@ async function register(req: Request, res: Response, next: NextFunction) {
     })
     // sign token
     const token = jwt.sign({ id: user.id, role: user.role.name }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
-    return res.status(201).json({ token, user: { id: user.id, email: user.email, role: user.role.name } })
+    return res.status(201).cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
+    }).json({ token, user: { id: user.id, email: user.email, role: user.role.name } })
   } catch (err) {
     console.error('Error in register:', err)
     next(err)
@@ -83,7 +89,12 @@ async function login(req: Request, res: Response, next: NextFunction) {
       return res.status(401).json({ error: 'Invalid credentials' })
     }
     const token = jwt.sign({ id: user.id, role: user.role.name }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
-    return res.status(200).json({ token, user: { id: user.id, email: user.email, role: user.role.name } })
+    return res.status(200).cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
+    }).json({ token, user: { id: user.id, email: user.email, role: user.role.name } })
   } catch (err) {
     console.error('Error in login:', err)
     next(err)
