@@ -8,52 +8,83 @@ datasource db {
 }
 
 model User {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
+  id         Int       @id @default(autoincrement())
+  email      String    @unique
   password   String
   roleId     Int
   name       String
   surname    String
   patronymic String
 
-  role       Role     @relation(fields: [roleId], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  role       Role      @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  teacher    Teacher?
+  pupil      Pupil?
 }
 
 model Role {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
+  id         Int       @id @default(autoincrement())
+  name       String    @unique
 
-  users User[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  users      User[]
 }
 
 model Class {
-  id           Int    @id @default(autoincrement())
-  classTeacher Int?   @unique // 👈 уникальное scalar-поле
+  id           Int       @id @default(autoincrement())
+  classTeacher Int?      @unique
 
-  teacher      Teacher? @relation("ClassTeacher", fields: [classTeacher], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  teacher      Teacher?  @relation("ClassTeacher", fields: [classTeacher], references: [id], onDelete: SetNull)
   pupils       Pupil[]
   disciplines  ClassesDisciplines[]
 }
 
 model Teacher {
-  id              Int    @id @default(autoincrement())
+  id              Int                    @id @default(autoincrement())
+  userId          Int                    @unique
   classroomNumber String
 
-  classClass      Class? @relation("ClassTeacher")
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  deletedAt       DateTime?
+
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  classClass      Class?                 @relation("ClassTeacher")
   disciplines     TeachersDisciplines[]
 }
 
 model Pupil {
-  id        Int    @id @default(autoincrement())
-  classId   Int
+  id         Int                    @id @default(autoincrement())
+  userId     Int                    @unique
+  classId    Int
 
-  class     Class  @relation(fields: [classId], references: [id])
-  marks     DisciplinePupilsMark[]
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+  deletedAt  DateTime?
+
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class      Class                  @relation(fields: [classId], references: [id], onDelete: Restrict)
+  marks      DisciplinePupilsMark[]
 }
+
 model Discipline {
-  id          Int    @id @default(autoincrement())
+  id          Int                   @id @default(autoincrement())
   name        String
   description String
+
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  deletedAt   DateTime?
 
   teachers    TeachersDisciplines[]
   classes     ClassesDisciplines[]
@@ -64,8 +95,8 @@ model TeachersDisciplines {
   teacherId    Int
   disciplineId Int
 
-  teacher      Teacher    @relation(fields: [teacherId], references: [id])
-  discipline   Discipline @relation(fields: [disciplineId], references: [id])
+  teacher    Teacher    @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  discipline Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
 
   @@id([teacherId, disciplineId])
 }
@@ -74,8 +105,8 @@ model ClassesDisciplines {
   classId      Int
   disciplineId Int
 
-  class        Class      @relation(fields: [classId], references: [id])
-  discipline   Discipline @relation(fields: [disciplineId], references: [id])
+  class      Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
+  discipline Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
 
   @@id([classId, disciplineId])
 }
@@ -83,10 +114,17 @@ model ClassesDisciplines {
 model DisciplinePupilsMark {
   disciplineId Int
   pupilId      Int
+  quarter      Int
   mark         Int
 
-  discipline   Discipline @relation(fields: [disciplineId], references: [id])
-  pupil        Pupil      @relation(fields: [pupilId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  @@id([disciplineId, pupilId])
+  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  pupil        Pupil      @relation(fields: [pupilId], references: [id], onDelete: Cascade)
+
+  @@id([disciplineId, pupilId, quarter])
+  @@index([pupilId])
+  @@index([quarter])
+  @@index([pupilId, quarter])
 }

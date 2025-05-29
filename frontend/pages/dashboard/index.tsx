@@ -1,43 +1,48 @@
-// pages/dashboard/index.tsx
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/router'
-import DashboardLayout from '../../components/layout/DashboardLayout'
-import api from '../../utils/api'
-import { Geist, Geist_Mono } from 'next/font/google'
-
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
-const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
+// frontend/pages/dashboard/index.tsx
+import React from 'react'
+import { GetServerSideProps, InferGetServerSidePropsType } from 'next'
+import DashboardLayout from '@/components/layout/DashboardLayout'
+import api from '@/utils/api'
 
 interface User {
-  id: string
+  id: number
   email: string
   name: string
-  role: 'admin' | 'teacher' | 'student'
+  surname: string
+  patronymic: string
+  role: 'ADMIN' | 'TEACHER' | 'STUDENT'
 }
 
-export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
-
-  useEffect(() => {
-    api.get<User>('/users')
-      .then(res => setUser(res.data))
-      .catch(() => {
-        router.push('/auth/login')
-      })
-      .finally(() => setLoading(false))
-  }, [])
-
-  if (loading) return <div>Загрузка...</div>
-  if (!user) return null
-
+export default function DashboardPage({
+  user,
+}: InferGetServerSidePropsType<typeof getServerSideProps>) {
   return (
-    <div className={`${geistSans.className} ${geistMono.className}`}>
-      <DashboardLayout user={user}>
-        <h1 className="text-2xl mb-4">Добро пожаловать, {user.name}!</h1>
-        {/* Здесь ваши виджеты */}
-      </DashboardLayout>
-    </div>
+    <DashboardLayout user={user}>
+      <h1 className="text-2xl mb-4">
+        Добро пожаловать, {user.name} {user.surname}!
+      </h1>
+      {/* ваши виджеты */}
+    </DashboardLayout>
   )
+}
+
+export const getServerSideProps: GetServerSideProps<{
+  user: User
+}> = async (ctx) => {
+  const cookie = ctx.req.headers.cookie || ''
+  try {
+    // Берём пользователя сразу на сервере, через настроенный api-инстанс
+    const { data: user } = await api.get<User>('/users/me', {
+      headers: { Cookie: cookie },
+    })
+    return { props: { user } }
+  } catch {
+    // Если не залогинен — редирект на логин
+    return {
+      redirect: {
+        destination: '/auth/login',
+        permanent: false,
+      },
+    }
+  }
 }

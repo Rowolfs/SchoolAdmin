@@ -7,6 +7,9 @@
     "dev": "ts-node-dev --respawn --transpile-only index.ts",
     "build": "tsc"
   },
+  "prisma": {
+    "seed": "ts-node --transpile-only prisma/seed.ts"
+  },
   "dependencies": {
     "@prisma/client": "^5.0.0",
     "@types/cors": "^2.8.18",
