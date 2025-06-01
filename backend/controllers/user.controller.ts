@@ -18,7 +18,7 @@ async function getProfile(req, res, next) {
       name:       user.name,
       surname:    user.surname,
       patronymic: user.patronymic,
-      role:       user.role.name,
+      role:       user.role,
       createdAt:  user.createdAt
     });
   } catch (err) {
@@ -106,11 +106,49 @@ async function deleteUserHandler(req, res, next) {
   }
 }
 
+// backend/controllers/user.controller.ts
+
+async function updateUserHandler(req, res, next) {
+  try {
+    const userId = Number(req.params.id);
+
+    // Добавляем classId и classroomNumber в деструктуризацию:
+    const { name, surname, patronymic, role, email, classId, classroomNumber } = req.body;
+
+    // Прокидываем все сразу в сервис, даже если не все нужны:
+    const updated = await UserService.updateUser(userId, {
+      name,
+      surname,
+      patronymic,
+      email,
+      role,
+      classId,         // для Pupil (если role === "STUDENT")
+      classroomNumber  // для Teacher (если role === "TEACHER")
+    });
+
+    // Разворачиваем результат
+    const flat = {
+      id:         updated.id,
+      name:       updated.name,
+      surname:    updated.surname,
+      patronymic: updated.patronymic,
+      email:      updated.email,
+      createdAt:  updated.createdAt,
+      role:       updated.role
+    };
+
+    res.json(flat);
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getProfile,
   getUsers,
   searchUsers,
   filterUsers,
   changeUserRoleHandler,
-  deleteUserHandler
+  deleteUserHandler,
+  updateUserHandler
 };

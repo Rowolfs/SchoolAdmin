@@ -21,8 +21,8 @@ model User {
   deletedAt  DateTime?
 
   role       Role      @relation(fields: [roleId], references: [id], onDelete: Restrict)
-  teacher    Teacher?
-  pupil      Pupil?
+  teacher    Teacher?  @relation("UserTeacher")
+  pupil      Pupil?    @relation("UserPupil")
 }
 
 model Role {
@@ -37,14 +37,14 @@ model Role {
 }
 
 model Class {
-  id           Int       @id @default(autoincrement())
+  id           Int                     @id @default(autoincrement())
   classTeacher Int?      @unique
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
   deletedAt    DateTime?
 
-  teacher      Teacher?  @relation("ClassTeacher", fields: [classTeacher], references: [id], onDelete: SetNull)
+  teacher      Teacher?   @relation("ClassTeacher", fields: [classTeacher], references: [id], onDelete: SetNull)
   pupils       Pupil[]
   disciplines  ClassesDisciplines[]
 }
@@ -52,13 +52,13 @@ model Class {
 model Teacher {
   id              Int                    @id @default(autoincrement())
   userId          Int                    @unique
-  classroomNumber String
+  classroomNumber String?
 
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
   deletedAt       DateTime?
 
-  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            User                   @relation("UserTeacher", fields: [userId], references: [id], onDelete: Cascade)
   classClass      Class?                 @relation("ClassTeacher")
   disciplines     TeachersDisciplines[]
 }
@@ -66,14 +66,14 @@ model Teacher {
 model Pupil {
   id         Int                    @id @default(autoincrement())
   userId     Int                    @unique
-  classId    Int
+  classId    Int?
 
   createdAt  DateTime               @default(now())
   updatedAt  DateTime               @updatedAt
   deletedAt  DateTime?
 
-  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  class      Class                  @relation(fields: [classId], references: [id], onDelete: Restrict)
+  user       User                   @relation("UserPupil", fields: [userId], references: [id], onDelete: Cascade)
+  class      Class?                  @relation(fields: [classId], references: [id], onDelete: Restrict)
   marks      DisciplinePupilsMark[]
 }
 

@@ -6,7 +6,8 @@ const {
   searchUsers,
   filterUsers,
   changeUserRoleHandler,
-  deleteUserHandler
+  deleteUserHandler,
+  updateUserHandler
 } = require('../controllers/user.controller');
 const { verifyToken } = require('../middlewares/auth');
 
@@ -26,6 +27,7 @@ router.get('/',      getUsers);
 router.get('/search', searchUsers);
 router.post('/filter', filterUsers);
 router.patch('/:id/role', changeUserRoleHandler);
+router.patch('/:id', updateUserHandler);
 router.delete('/:id',     deleteUserHandler);
 
 module.exports = router;

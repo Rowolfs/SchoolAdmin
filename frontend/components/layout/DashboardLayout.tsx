@@ -1,7 +1,7 @@
 // frontend/components/layout/DashboardLayout.tsx
 'use client'
 
-import React, { ReactNode, useState } from 'react'
+import React, { ReactNode, use, useState } from 'react'
 import { useRouter } from 'next/router'
 import { actionConfig, ActionButton } from '@/utils/actionConfig'
 
@@ -10,20 +10,20 @@ interface MenuItem {
   path: string
 }
 
-const menuConfig: Record<'admin'|'teacher'|'student', MenuItem[]> = {
-  admin: [
+const menuConfig: Record<'ADMIN'|'TEACHER'|'STUDENT', MenuItem[]> = {
+  ADMIN: [
     { title: 'Панель', path: '/dashboard' },
     { title: 'Пользователи', path: '/dashboard/users' },
     { title: 'Учителя', path: '/dashboard/teachers' },
     { title: 'Ученики', path: '/dashboard/students' },
     { title: 'Классы', path: '/dashboard/classes' },
   ],
-  teacher: [
+  TEACHER: [
     { title: 'Панель', path: '/dashboard' },
     { title: 'Ученики', path: '/dashboard/students' },
     { title: 'Оценки', path: '/dashboard/grades' },
   ],
-  student: [
+  STUDENT: [
     { title: 'Панель', path: '/dashboard' },
     { title: 'Мои оценки', path: '/dashboard/grades' },
   ],
@@ -51,9 +51,8 @@ export default function DashboardLayout({ user, children }: DashboardLayoutProps
   }
 
   // Приводим роль к нижнему регистру для lookup в конфигах
-  const roleKey = user.role.toLowerCase() as 'admin'|'teacher'|'student'
-  const items = menuConfig[roleKey] || []
-  const actions: ActionButton[] = actionConfig[roleKey] || []
+  const items = menuConfig[user.role] || []
+  const actions: ActionButton[] = actionConfig[user.role] || []
 
   return (
     <div className="flex min-h-screen">
@@ -66,7 +65,7 @@ export default function DashboardLayout({ user, children }: DashboardLayoutProps
             <div className="font-semibold">
               {user.name} {user.surname} {user.patronymic}
             </div>
-            <div className="text-sm capitalize">{user.role.toLowerCase()}</div>
+            <div className="text-sm capitalize">{user.role}</div>
           </div>
         </div>
         {/* Меню */}
@@ -100,7 +99,7 @@ export default function DashboardLayout({ user, children }: DashboardLayoutProps
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-semibold">{user.name}</div>
-                <div className="text-sm capitalize">{user.role.toLowerCase()}</div>
+                <div className="text-sm capitalize">{user.role}</div>
               </div>
               <button onClick={() => setDrawerOpen(false)} aria-label="Закрыть меню">
                 <svg width="24" height="24" fill="currentColor">

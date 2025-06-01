@@ -18,12 +18,17 @@ export interface IFilter {
   role?: string
 }
 
+/**
+ * Хук для загрузки списка пользователей с поиском и фильтрацией
+ */
 export const useUsers = (search?: string, filter?: IFilter) =>
   useQuery<IUser[], Error>({
     queryKey: ['users', search, filter],
     queryFn: async () => {
       if (search) {
-        const { data } = await api.get<IUser[]>(`/users/search?q=${encodeURIComponent(search)}`)
+        const { data } = await api.get<IUser[]>(
+          `/users/search?q=${encodeURIComponent(search)}`
+        )
         return data
       }
       if (filter && (filter.dateFrom || filter.dateTo || filter.role)) {
@@ -33,22 +38,49 @@ export const useUsers = (search?: string, filter?: IFilter) =>
       const { data } = await api.get<IUser[]>('/users')
       return data
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0, // всегда stale, чтобы invalidateQueries сразу рефетчил
   })
 
-export const useUpdateUserRole = () => {
+/**
+ * Хук для обновления полей пользователя
+ */
+export const useUpdateUser = (search?: string, filter?: IFilter) => {
+  
   const qc = useQueryClient()
+  const key = ['users', search, filter] as const
+
   return useMutation(
-    ({ id, role }: { id: number; role: string }) =>
-      api.patch(`/users/${id}/role`, { role }),
-    { onSuccess: () => qc.invalidateQueries(['users']) }
+    ({ id, changes }: { id: number; changes: Partial<IUser> }) =>
+      api.patch<IUser>(`/users/${id}`, changes),
+    {
+      onMutate: async ({ id, changes }) => {
+        await qc.cancelQueries(key)
+        const previous = qc.getQueryData<IUser[]>(key)
+        qc.setQueryData<IUser[]>(key, old =>
+          old?.map(u => (u.id === id ? { ...u, ...changes } : u))
+        )
+        return { previous }
+      },
+      onError: (_err, _vars, context: any) => {
+        if (context?.previous) qc.setQueryData(key, context.previous)
+      },
+      onSettled: () => {
+        qc.invalidateQueries(key, { refetchType: 'all' })
+      },
+
+    }
   )
 }
 
+/**
+ * Хук для soft-delete пользователя
+ */
 export const useDeleteUser = () => {
   const qc = useQueryClient()
   return useMutation(
     (id: number) => api.delete(`/users/${id}`),
-    { onSuccess: () => qc.invalidateQueries(['users']) }
+    {
+      onSuccess: () => qc.invalidateQueries({ queryKey: ['users'], exact: false })
+    }
   )
 }

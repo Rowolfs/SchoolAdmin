@@ -78,11 +78,11 @@ async function login(req: Request, res: Response, next: NextFunction) {
       return res.status(400).json({ error: 'Email and password are required' })
     }
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email, deletedAt: null },
       include: { role: true }
     })
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' })
+      return res.status(401).json({ error: 'Invalid credentials or your account was deleted' })
     }
     const match = await bcrypt.compare(password, user.password)
     if (!match) {

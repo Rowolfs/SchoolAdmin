@@ -1,6 +1,6 @@
 // frontend/components/DataTable.tsx
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   useReactTable,
   ColumnDef,
@@ -19,9 +19,17 @@ interface DataTableProps<T> {
 export default function DataTable<T>({ columns, data, isLoading }: DataTableProps<T>) {
   const [sorting, setSorting] = useState([])
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
+  const [tableData, setTableData] = useState<T[]>(data)
+
+  // Обновляем внутренний стейт при изменении props.data
+  useEffect(() => {
+    setTableData(data)
+    // При необходимости сбрасываем пагинацию на первую страницу
+    setPagination(prev => ({ ...prev, pageIndex: 0 }))
+  }, [data])
 
   const table = useReactTable({
-    data,
+    data: tableData,
     columns,
     state: { sorting, pagination },
     onSortingChange: setSorting,
@@ -40,7 +48,11 @@ export default function DataTable<T>({ columns, data, isLoading }: DataTableProp
               {table.getHeaderGroups().map(hg => (
                 <tr key={hg.id}>
                   {hg.headers.map(h => (
-                    <th key={h.id} onClick={h.column.getToggleSortingHandler()} className="px-4 py-2 text-left">
+                    <th
+                      key={h.id}
+                      onClick={h.column.getToggleSortingHandler()}
+                      className="px-4 py-2 text-left"
+                    >
                       {flexRender(h.column.columnDef.header, h.getContext())}
                     </th>
                   ))}
