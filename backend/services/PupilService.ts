@@ -12,6 +12,8 @@ class PupilService {
       where: { deletedAt: null },
       select: {
         id: true,
+        userId: true,
+        classId: true,
         user: {
           select: {
             id: true,
@@ -22,13 +24,9 @@ class PupilService {
             role: { select: { name: true } }
           }
         },
-        class: {
-          select: {
-            id: true
-          }
-        },
         createdAt: true
-      }
+      },
+      orderBy: { createdAt: 'desc' }
     });
 
     return pupils.map(p => ({
@@ -41,7 +39,7 @@ class PupilService {
         email: p.user.email,
         role: p.user.role.name
       },
-      classId: p.class.id,
+      classId: p.classId,
       createdAt: p.createdAt
     }));
   }
@@ -62,90 +60,172 @@ class PupilService {
   }
 
   /**
-   * Обновить данные ученика
+   * Получить всех учеников, прикреплённых к конкретному классу (classId)
+   * Возвращает массив объектов: { id: Pupil.id, userId, classId, user: { id, name, surname, patronymic, email, role } }
    */
-  async updateUser(userId: number, payload: { name?: string; surname?: string; patronymic?: string; role?: string; classId?: number }) {
-  const { name, surname, patronymic, role: newRoleName, classId } = payload;
-
-  // 1) Получаем старую роль
-  const existing = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: { select: { name: true } } }
-  });
-  if (!existing) throw new Error(`User с id=${userId} не найден`);
-  const oldRole = existing.role.name;
-
-  // 2) Подготавливаем объект data для обновления User
-  const data: any = {};
-  if (name !== undefined)       data.name = name;
-  if (surname !== undefined)    data.surname = surname;
-  if (patronymic !== undefined) data.patronymic = patronymic;
-  if (newRoleName !== undefined) {
-    data.role = { connect: { name: newRoleName } };
-  }
-
-  // 3) Если новая роль — STUDENT, а старая не STUDENT → создаём Pupil
-  if (newRoleName === 'STUDENT' && oldRole !== 'STUDENT') {
-    // обязательно classId
-    if (!classId) {
-      throw new Error('При смене роли на STUDENT необходимо указать classId');
-    }
-
-    // проверяем, что класс существует
-    const cls = await prisma.class.findUnique({
-      where: { id: classId },
-      select: { id: true }
+  async getPupilsByClass(classId) {
+    const pupils = await prisma.pupil.findMany({
+      where: {
+        classId,
+        deletedAt: null
+      },
+      select: {
+        id: true,
+        userId: true,
+        classId: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            surname: true,
+            patronymic: true,
+            email: true,
+            role: { select: { name: true } }
+          }
+        },
+        createdAt: true
+      },
+      orderBy: { createdAt: 'desc' }
     });
-    if (!cls) {
-      throw new Error(`Class с id=${classId} не найден`);
-    }
 
-    // создаём Pupil, привязанного к этому пользователю и классу
-    await prisma.pupil.create({
-      data: {
-        user: { connect: { id: userId } },
-        class: { connect: { id: classId } }
-      }
-    });
+    return pupils.map(p => ({
+      id: p.id,
+      user: {
+        id: p.user.id,
+        name: p.user.name,
+        surname: p.user.surname,
+        patronymic: p.user.patronymic,
+        email: p.user.email,
+        role: p.user.role.name
+      },
+      classId: p.classId,
+      createdAt: p.createdAt
+    }));
   }
-
-  // 4) Если старая роль — STUDENT, а новая не STUDENT → soft-delete Pupil
-  if (oldRole === 'STUDENT' && newRoleName !== 'STUDENT') {
-    await prisma.pupil.updateMany({
-      where: { userId },
-      data: { deletedAt: new Date() }
-    });
-  }
-
-  // 5) Обновляем поля самого User
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data,
-    select: {
-      id: true,
-      name: true,
-      surname: true,
-      patronymic: true,
-      email: true,
-      role: { select: { name: true } },
-      createdAt: true
-    }
-  });
-
-  return {
-    id: updated.id,
-    name: updated.name,
-    surname: updated.surname,
-    patronymic: updated.patronymic,
-    email: updated.email,
-    role: updated.role.name,
-    createdAt: updated.createdAt
-  };
-}
-
 
   /**
-   * Soft-delete ученика
+   * Обновить данные ученика (при смене роли, classId и т.д.)
+   */
+  async updateUser(userId, payload) {
+    const { name, surname, patronymic, role: newRoleName, classId } = payload;
+
+    // 1) Получаем старую роль
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: { select: { name: true } } }
+    });
+    if (!existing) throw new Error(`User с id=${userId} не найден`);
+    const oldRole = existing.role.name;
+
+    // 2) Подготавливаем данные для обновления User
+    const dataUser: any = {};
+    if (name !== undefined)       dataUser.name = name;
+    if (surname !== undefined)    dataUser.surname = surname;
+    if (patronymic !== undefined) dataUser.patronymic = patronymic;
+    if (newRoleName !== undefined) {
+      dataUser.role = { connect: { name: newRoleName } };
+    }
+
+    // 3) Логика для TEACHER
+    if (newRoleName === 'TEACHER' && oldRole !== 'TEACHER') {
+      const existingTeacher = await prisma.teacher.findUnique({
+        where: { userId },
+        select: { id: true, deletedAt: true }
+      });
+      if (existingTeacher) {
+        if (existingTeacher.deletedAt !== null) {
+          await prisma.teacher.update({
+            where: { userId },
+            data: { deletedAt: null }
+          });
+        }
+      } else {
+        await prisma.teacher.create({
+          data: {
+            user: { connect: { id: userId } }
+          }
+        });
+      }
+    }
+    if (oldRole === 'TEACHER' && newRoleName !== 'TEACHER') {
+      await prisma.teacher.updateMany({
+        where: { userId },
+        data: { deletedAt: new Date() }
+      });
+    }
+
+    // 4) Логика для STUDENT
+    if (newRoleName === 'STUDENT') {
+      if (oldRole !== 'STUDENT') {
+        // смена с не-STUDENT на STUDENT → создаём запись Pupil
+        await prisma.pupil.create({
+          data: {
+            user: { connect: { id: userId } },
+            classId: classId ?? null
+          }
+        });
+      } else {
+        // если уже был STUDENT и пришёл новый classId → обновляем
+        if (classId !== undefined) {
+          const existingPupil = await prisma.pupil.findFirst({
+            where: { userId, deletedAt: null },
+            select: { id: true, classId: true }
+          });
+          if (existingPupil) {
+            if (classId !== existingPupil.classId) {
+              await prisma.pupil.update({
+                where: { id: existingPupil.id },
+                data: { classId }
+              });
+            }
+          } else {
+            // если по какой-то причине не было записи, создаём
+            await prisma.pupil.create({
+              data: {
+                user: { connect: { id: userId } },
+                classId: classId ?? null
+              }
+            });
+          }
+        }
+      }
+    }
+    if (oldRole === 'STUDENT' && newRoleName !== 'STUDENT') {
+      // смена со STUDENT на не-STUDENT → soft-delete Pupil
+      await prisma.pupil.updateMany({
+        where: { userId },
+        data: { deletedAt: new Date() }
+      });
+    }
+
+    // 5) Обновляем запись User
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: dataUser,
+      select: {
+        id: true,
+        name: true,
+        surname: true,
+        patronymic: true,
+        email: true,
+        role: { select: { name: true } },
+        createdAt: true
+      }
+    });
+
+    return {
+      id: updated.id,
+      name: updated.name,
+      surname: updated.surname,
+      patronymic: updated.patronymic,
+      email: updated.email,
+      role: updated.role.name,
+      createdAt: updated.createdAt
+    };
+  }
+
+  /**
+   * Soft-delete ученика (Pupil) по userId
    */
   async deletePupil(userId) {
     await prisma.pupil.updateMany({

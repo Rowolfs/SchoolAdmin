@@ -108,7 +108,7 @@ class UserService {
       where: {
         deletedAt: null,
         id: { not: excludeUserId },
-        email: { not: 'admin@admin.ru' },
+        role: { name: { not: 'SuperAdmin' } },
       },
       select: {
         id: true,
@@ -173,7 +173,7 @@ class UserService {
       where: {
         deletedAt: null,
         id: { not: excludeUserId },
-        email: { not: 'admin@admin.ru' },
+        role: { name: { not: 'SuperAdmin' } },
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
           { surname: { contains: query, mode: 'insensitive' } },

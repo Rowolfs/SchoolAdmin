@@ -39,6 +39,7 @@ model Role {
 model Class {
   id           Int                     @id @default(autoincrement())
   classTeacher Int?      @unique
+  name         String    @unique
 
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt

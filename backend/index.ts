@@ -7,6 +7,8 @@ const teachersRouter = require('./routers/teachers.router');
 const registerRouter = require('./routers/register.router');
 const loginRouter = require('./routers/login.router');
 const userRouter = require('./routers/user.router');
+const classRouter = require('./routers/class.router');
+const studentRouter = require('./routers/student.router')
 
 
 const app = express();
@@ -31,6 +33,8 @@ app.use('/api/teachers', teachersRouter);
 app.use('/api/auth/register', registerRouter);
 app.use('/api/auth/login', loginRouter);
 app.use('/api/users', userRouter);
+app.use('/api/classes', classRouter);
+app.use('/api/students', studentRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

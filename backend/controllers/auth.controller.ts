@@ -1,13 +1,10 @@
-const express = require("express");
-const { Request, Response, NextFunction } = require("express");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const PrismaSingelton = require('../prisma/client');
-const prisma = PrismaSingelton.getInstance();
-const dotenv = require("dotenv");
-dotenv.config();
-const JWT_SECRET = process.env.JWT_SECRET
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d'
+// backend/controllers/auth.controller.ts
+const { Request, Response, NextFunction } = require('express');
+const jwt = require('jsonwebtoken');
+const UserService = require('../services/UserService');
+require('dotenv').config();
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
 
 /**
  * POST /api/auth/register
@@ -15,54 +12,62 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d'
  */
 async function register(req: Request, res: Response, next: NextFunction) {
   try {
-    const { email, password, roleName, name, surname, patronymic } = req.body as unknown as {
-      email: string
-      password: string
-      roleName: string
-      name: string
-      surname: string
-      patronymic: string
-    }
+    const {
+      email,
+      password,
+      roleName,
+      name,
+      surname,
+      patronymic,
+    } = req.body as unknown as {
+      email: string;
+      password: string;
+      roleName: string;
+      name: string;
+      surname: string;
+      patronymic: string;
+    };
 
     if (!email || !password || !roleName || !name || !surname || !patronymic) {
-      return res.status(400).json({ error: 'All fields are required' })
+      return res.status(400).json({ error: 'All fields are required' });
     }
-    // check existing
-    const existing = await prisma.user.findUnique({ where: { email } })
-    if (existing) {
-      return res.status(409).json({ error: 'User already exists' })
+
+    // Вызываем сервисную логику регистрации
+    const user = await UserService.registerUser({
+      email,
+      password,
+      roleName,
+      name,
+      surname,
+      patronymic,
+    });
+
+    // Генерируем JWT
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+
+    return res
+      .status(201)
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
+      })
+      .json({ token, user: { id: user.id, email: user.email, role: user.role } });
+  } catch (err: any) {
+    // Обработка ошибок из сервиса
+    if (err.message === 'User already exists') {
+      return res.status(409).json({ error: err.message });
     }
-    // find role
-    const role = await prisma.role.findUnique({ where: { name: roleName } })
-    if (!role) {
-      return res.status(400).json({ error: 'Invalid role' })
+    if (err.message === 'Invalid role') {
+      return res.status(400).json({ error: err.message });
     }
-    // hash
-    const salt = await bcrypt.genSalt(10)
-    const hash = await bcrypt.hash(password, salt)
-    // create user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hash,
-        name,
-        surname,
-        patronymic,
-        role: { connect: { id: role.id } }
-      },
-      include: { role: true }
-    })
-    // sign token
-    const token = jwt.sign({ id: user.id, role: user.role.name }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
-    return res.status(201).cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
-    }).json({ token, user: { id: user.id, email: user.email, role: user.role.name } })
-  } catch (err) {
-    console.error('Error in register:', err)
-    next(err)
+    console.error('Error in register:', err);
+    next(err);
   }
 }
 
@@ -72,34 +77,46 @@ async function register(req: Request, res: Response, next: NextFunction) {
  */
 async function login(req: Request, res: Response, next: NextFunction) {
   try {
-
-    const { email, password } = req.body as { email?: string; password?: string };
+    const { email, password } = req.body as {
+      email?: string;
+      password?: string;
+    };
     if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' })
+      return res.status(400).json({ error: 'Email and password are required' });
     }
+    // Логика логина остаётся прежней
+    const prisma = require('../prisma/client').getInstance();
     const user = await prisma.user.findUnique({
       where: { email, deletedAt: null },
-      include: { role: true }
-    })
+      include: { role: true },
+    });
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials or your account was deleted' })
+      return res
+        .status(401)
+        .json({ error: 'Invalid credentials or your account was deleted' });
     }
-    const match = await bcrypt.compare(password, user.password)
+    const match = await require('bcrypt').compare(password, user.password);
     if (!match) {
-      return res.status(401).json({ error: 'Invalid credentials' })
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
-    const token = jwt.sign({ id: user.id, role: user.role.name }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN })
-    return res.status(200).cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
-    }).json({ token, user: { id: user.id, email: user.email, role: user.role.name } })
+    const token = jwt.sign(
+      { id: user.id, role: user.role.name },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
+    );
+    return res
+      .status(200)
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
+      })
+      .json({ token, user: { id: user.id, email: user.email, role: user.role.name } });
   } catch (err) {
-    console.error('Error in login:', err)
-    next(err)
+    console.error('Error in login:', err);
+    next(err);
   }
 }
 
-module.exports = { register, login }
-export { register, login }
+module.exports = { register, login };
