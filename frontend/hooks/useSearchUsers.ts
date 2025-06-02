@@ -1,19 +1,18 @@
-// frontend/hooks/useSearchUsers.ts
+// frontend/hooks/useSearchStudents.ts
 import { useQuery } from '@tanstack/react-query';
-import { UserAPI, User } from '../utils/api';
+import { StudentAPI, Student } from '../utils/studentAPI';
 
-/**
- * Хук для поиска пользователей (по ФИО)
- * GET /api/users/search?q=…
- * @param query - строка поиска
- */
-export function useSearchUsers(query: string) {
-  return useQuery<User[]>(
-    ['searchUsers', query],
-    () => UserAPI.search(query).then((res) => res.data),
-    {
-      enabled: query.trim().length > 0,
-      staleTime: 1000 * 60 * 5, // 5 минут кеширования
-    }
-  );
+export default function useSearchStudents(query: string) {
+  return useQuery<Student[]>({
+    queryKey: ['searchStudents', query],
+    queryFn: async () => {
+      if (!query || query.trim() === '') {
+        return [];
+      }
+      return StudentAPI.search(query.trim());
+    },
+    // не запускаем запрос, пока строка поиска пустая
+    enabled: query.trim().length > 0,
+    // можно указать staleTime, если нужно
+  });
 }

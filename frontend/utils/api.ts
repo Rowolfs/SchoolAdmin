@@ -1,9 +1,103 @@
-import axios from 'axios'
+// frontend/utils/api.ts
+import axios from 'axios';
 
+// Создаём Axios-экземпляр
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api', // это твой backend
+  baseURL: 'http://localhost:5000/api', // ваш бэкенд
   timeout: 5000,
-  withCredentials: true
-})
+  withCredentials: true,
+});
 
-export default api
+export default api;
+
+// =========================
+//  Интерфейсы / типы
+// =========================
+
+export interface User {
+  id: number;
+  name: string;
+  surname: string;
+  patronymic: string;
+  email: string;
+  role: 'ADMIN' | 'TEACHER' | 'STUDENT';
+  createdAt: string;
+}
+
+export interface Student {
+  id: number;           // Pupil.id
+  userId: number;       // User.id
+  classId: number | null;
+  user: {
+    id: number;
+    name: string;
+    surname: string;
+    patronymic: string;
+    email: string;
+    role: 'STUDENT';
+  };
+  createdAt: string;
+}
+
+export interface Class {
+  id: number;
+  name: string;
+  classTeacher?: number | null;
+  teacher?: {
+    id: number;
+    user: { name: string; surname: string; patronymic: string };
+  } | null;
+  pupils?: {
+    id: number;
+    userId: number;
+    user: { name: string; surname: string; patronymic: string };
+  }[];
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
+}
+
+// =========================
+//  API для пользователей
+// =========================
+
+export const UserAPI = {
+  // Поиск по ФИО (возвращает массив User)
+  search: (q: string) =>
+    api.get<User[]>(`/users/search`, { params: { q } }).then((res) => res.data),
+};
+
+// =========================
+//  API для студентов (Pupil)
+// =========================
+
+export const StudentAPI = {
+  // Получить всех студентов
+  getAllClasses: () => api.get<Student[]>('/students').then((res) => res.data),
+
+  // Получить студентов по классу
+  getByClass: (classId: number) =>
+    api.get<Student[]>(`/students/class/${classId}`).then((res) => res.data),
+};
+
+// =========================
+//  API для классов
+// =========================
+
+export const ClassAPI = {
+  // Получить все классы
+  getAll: () => api.get<Class[]>('/classes').then((res) => res.data),
+
+  // Создать класс
+  create: (data: { name: string; classTeacher?: number }) =>
+    api.post<Class>('/classes', data).then((res) => res.data),
+
+  // Удалить класс (soft-delete)
+  remove: (id: number) => api.delete<void>(`/classes/${id}`),
+
+  // Назначить / перезаписать список студентов в классе
+  assignStudents: (id: number, studentIds: number[]) =>
+    api
+      .post<Student[]>(`/classes/${id}/students`, { studentIds })
+      .then((res) => res.data),
+};

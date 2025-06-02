@@ -7,6 +7,8 @@ class PupilService {
    * Получить всех активных учеников
    * Возвращает данные ученика вместе с информацией о пользователе
    */
+
+  
   async getAllPupils() {
     const pupils = await prisma.pupil.findMany({
       where: { deletedAt: null },
@@ -245,6 +247,38 @@ class PupilService {
     });
     return { success: true };
   }
+
+  async searchPupils(query) {
+  return prisma.pupil.findMany({
+    where: {
+      deletedAt: null,
+      user: {
+        OR: [
+          { name: { contains: query, mode: 'insensitive' } },
+          { surname: { contains: query, mode: 'insensitive' } },
+          { patronymic: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+    },
+    select: {
+      id: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          surname: true,
+          patronymic: true,
+        },
+      },
+    },
+  });
 }
+}
+
+
+
+
+
+
 
 module.exports = new PupilService();

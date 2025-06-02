@@ -1,4 +1,3 @@
-// frontend/components/DataTable.tsx
 'use client'
 import React, { useState, useEffect } from 'react'
 import {
@@ -21,10 +20,10 @@ export default function DataTable<T>({ columns, data, isLoading }: DataTableProp
   const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 10 })
   const [tableData, setTableData] = useState<T[]>(data)
 
-  // Обновляем внутренний стейт при изменении props.data
+  // Обновляем внутренний стейт, когда props.data меняется
   useEffect(() => {
     setTableData(data)
-    // При необходимости сбрасываем пагинацию на первую страницу
+    // Сбрасываем страницу в пагинации на первую
     setPagination(prev => ({ ...prev, pageIndex: 0 }))
   }, [data])
 
@@ -41,7 +40,10 @@ export default function DataTable<T>({ columns, data, isLoading }: DataTableProp
 
   return (
     <div>
-      {isLoading ? <div>Загрузка...</div> : (
+      {isLoading ? (
+        // Если проп isLoading = true, показываем «Загрузка…»
+        <div>Загрузка...</div>
+      ) : (
         <>
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-100">
@@ -69,6 +71,15 @@ export default function DataTable<T>({ columns, data, isLoading }: DataTableProp
                   ))}
                 </tr>
               ))}
+
+              {/* Если строк нет, показываем «Нет записей» */}
+              {table.getRowModel().rows.length === 0 && (
+                <tr>
+                  <td colSpan={columns.length} className="px-4 py-2 text-center">
+                    Нет записей
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 

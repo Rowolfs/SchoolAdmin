@@ -1,7 +1,8 @@
 // backend/routers/student.router.js
 const express = require('express');
-const { viewStudents, viewStudentsByClass } = require('../controllers/student.controller');
+const { viewStudents, viewStudentsByClass, searchStudents } = require('../controllers/student.controller');
 const { verifyToken, authorize } = require('../middlewares/auth');
+
 
 const router = express.Router();
 
@@ -13,5 +14,7 @@ router.get('/', authorize(['ADMIN', 'TEACHER']), viewStudents);
 
 // Получить студентов по ID класса (ролям ADMIN и TEACHER)
 router.get('/class/:classId', authorize(['ADMIN', 'TEACHER']), viewStudentsByClass);
+
+router.get('/search', searchStudents);
 
 module.exports = router;

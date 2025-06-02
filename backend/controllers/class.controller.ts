@@ -21,7 +21,7 @@ async function viewClasses(req, res, next) {
 async function viewClassById(req, res, next) {
   try {
     const id = Number(req.params.id);
-    const cls = await ClassService.getClassById(id);
+    const cls = await ClassService.getById(id);
     if (!cls) {
       return res.status(404).json({ message: 'Class not exist' });
     }
@@ -37,12 +37,16 @@ async function viewClassById(req, res, next) {
  */
 async function createClass(req, res, next) {
   try {
-    const { classTeacher } = req.body;
-    const newClass = await ClassService.createClass({ classTeacher });
-    return res.status(201).json(newClass);
-  } catch (err) {
-    return next(err);
-  }
+      const { name, classTeacher } = req.body
+      if (!name) {
+        return res.status(400).json({ message: 'Поле name обязательно' })
+      }
+      const created = await ClassService.createClass({ name, classTeacher })
+      return res.status(201).json(created)
+    } catch (err) {
+      console.error(err)
+      return res.status(500).json({ message: 'Ошибка при создании класса' })
+    }
 }
 
 /**

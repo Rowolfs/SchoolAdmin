@@ -4,8 +4,8 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { X as XIcon } from 'lucide-react';
-import { useSearchUsers } from '../hooks/useUsers';
-import { useAssignStudents } from '../hooks/useClasses';
+import useSearchUsers  from '../hooks/useSearchUsers';
+import { useAssignStudents } from '../hooks/useAssignStudents';
 import { User } from '../utils/api';
 
 interface AssignStudentsModalProps {

@@ -30,7 +30,22 @@ async function viewStudentsByClass(req, res, next) {
   }
 }
 
+async function searchStudents(req, res, next) {
+  try {
+    const { query } = req.query;
+    if (!query || query.length < 1) {
+      return res.status(400).json({ message: 'Параметр "query" обязателен' });
+    }
+
+    const result = await PupilService.searchPupils(query);
+    return res.json(result);
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   viewStudents,
   viewStudentsByClass,
+  searchStudents
 };

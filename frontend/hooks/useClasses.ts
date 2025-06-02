@@ -1,44 +1,28 @@
 // frontend/hooks/useClasses.ts
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ClassAPI, Class } from '../utils/api';
+import { ClassAPI, Class } from '../utils/classAPI';
 
-export interface Class {
-  id: number;
-  name: string;
-  classTeacher?: number | null;
-  teacher?: {
-    id: number;
-    user: { name: string; surname: string; patronymic: string };
-  } | null;
-  pupils?: {
-    id: number;
-    userId: number;
-    user: { name: string; surname: string; patronymic: string };
-  }[];
-  createdAt: string;
-  updatedAt: string;
-  deletedAt?: string | null;
-}
-
-/**
- * Получить список всех классов
- * GET /api/classes
- */
 export function useClasses() {
-  return useQuery<Class[]>(['classes'], () =>
-    ClassAPI.getAll().then((res) => res.data)
+  console.log('[useClasses] Хук useClasses был вызван'); // <-- ЛОГ №1
+
+  return useQuery<Class[]>(
+    ['classes'],
+    () => {
+      console.log('[useClasses] Передаю управление ClassAPI.getAll()'); // <-- ЛОГ №2
+      return ClassAPI.getAll();
+    },
+
   );
 }
 
-/**
- * Создать новый класс
- * POST /api/classes
- */
 export function useCreateClass() {
   const queryClient = useQueryClient();
+  console.log('[useCreateClass] Хук useCreateClass был вызван'); // <-- ЛОГ №3
   return useMutation(
-    (newClass: { name: string; classTeacher?: number }) =>
-      ClassAPI.create(newClass).then((res) => res.data),
+    (newClass: { name: string; classTeacher?: number }) => {
+      console.log('[useCreateClass] Вызов ClassAPI.create'); // <-- ЛОГ №4
+      return ClassAPI.create(newClass);
+    },
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['classes']);
@@ -47,14 +31,14 @@ export function useCreateClass() {
   );
 }
 
-/**
- * Soft-delete класса
- * DELETE /api/classes/:id
- */
 export function useDeleteClass() {
   const queryClient = useQueryClient();
+  console.log('[useDeleteClass] Хук useDeleteClass был вызван'); // <-- ЛОГ №5
   return useMutation(
-    (classId: number) => ClassAPI.remove(classId).then(() => classId),
+    (classId: number) => {
+      console.log('[useDeleteClass] Вызов ClassAPI.remove для id =', classId); // <-- ЛОГ №6
+      return ClassAPI.remove(classId);
+    },
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['classes']);
