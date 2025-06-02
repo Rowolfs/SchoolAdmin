@@ -166,7 +166,7 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
               />
               <input
                 type="number"
-                placeholder="ID учителя (опционально)"
+                placeholder="Классный руководитель"
                 value={newClassTeacherId}
                 onChange={(e) =>
                   setNewClassTeacherId(e.target.value === '' ? '' : Number(e.target.value))

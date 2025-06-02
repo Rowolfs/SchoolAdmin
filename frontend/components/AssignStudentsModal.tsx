@@ -1,82 +1,63 @@
 // frontend/components/AssignStudentsModal.tsx
-'use client';
-
-import React, { useState, useEffect, Fragment } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { X as XIcon } from 'lucide-react';
-import useSearchUsers  from '../hooks/useSearchUsers';
+import React, { useState, useEffect } from 'react';
+import { useSearchStudents } from '../hooks/useSearchStudents';
+import { useStudentsByClass } from '../hooks/useStudentsByClass';
 import { useAssignStudents } from '../hooks/useAssignStudents';
-import { User } from '../utils/api';
 
 interface AssignStudentsModalProps {
   isOpen: boolean;
   onClose: () => void;
   classId: number;
-  existingUserIds: number[]; // Массив User.id, которые уже прикреплены к классу
 }
 
 export default function AssignStudentsModal({
   isOpen,
   onClose,
   classId,
-  existingUserIds,
 }: AssignStudentsModalProps) {
-  // Строка поиска
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  // 1) Сразу получаем массив уже закреплённых за классом Pupil.id
+  const {
+    data: pupilsOfClass = [],
+    isLoading: loadingPupilsOfClass,
+    isError: errorPupilsOfClass,
+  } = useStudentsByClass(classId);
 
-  // Массив найденных пользователей (User[]), когда в поиске есть хотя бы 1 символ
+  // 2) Локальное состояние строки поиска
+  const [searchStr, setSearchStr] = useState<string>('');
+
+  // 3) Получаем «доступных» учеников — свободных и/или закреплённых за этим классом
   const {
     data: searchResults = [],
-    refetch: refetchSearch,
-    isFetching: isSearching,
-  } = useSearchUsers(searchQuery);
+    isLoading: loadingSearchResults,
+  } = useSearchStudents(searchStr, classId);
 
-  // Множество выбранных User.id (чекбоксы)
-  const [selectedUserIds, setSelectedUserIds] = useState<Set<number>>(new Set());
+  // 4) Локальный массив «отмеченных» Pupil.id
+  //    Инициализируем его при открытии модалки значением pupilsOfClass.map(p => p.id)
+  const [checkedIds, setCheckedIds] = useState<number[]>([]);
 
-  // Мутация для назначения/перезаписи учеников в класс
-  const assignMutation = useAssignStudents();
-
-  // При открытии модалки устанавливаем изначальные выбранные User.id
   useEffect(() => {
     if (isOpen) {
-      setSelectedUserIds(new Set(existingUserIds));
-      setSearchQuery('');
+      // При каждом открытии модалки:
+      setSearchStr(''); // сбросить строку поиска
+      // Взять уже закреплённых за классом (запрашиваются в п.1)
+      setCheckedIds(pupilsOfClass.map((p) => p.id));
     }
-  }, [isOpen, existingUserIds]);
+  }, [isOpen, pupilsOfClass]);
 
-  // Обработчик клика по чекбоксу
-  const handleToggle = (userId: number) => {
-    setSelectedUserIds(prev => {
-      const copy = new Set(prev);
-      if (copy.has(userId)) {
-        copy.delete(userId);
-      } else {
-        copy.add(userId);
-      }
-      return copy;
-    });
+  // 5) Мутация для отправки списка checkedIds на сервер
+  const assignMutation = useAssignStudents();
+
+  // 6) Обработчик клика по одной строке (чекбоксу):
+  const toggleCheck = (id: number) => {
+    setCheckedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   };
 
-  // Обработчик ввода в поле поиска
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  };
-
-  // При изменении searchQuery подгружаем новые результаты (если длина > 0)
-  useEffect(() => {
-    if (searchQuery.trim().length > 0) {
-      refetchSearch();
-    }
-  }, [searchQuery, refetchSearch]);
-
-  // При клике «Сохранить» отправляем ассигнмент
+  // 7) По нажатию «Сохранить» вызываем мутацию
   const handleSave = () => {
     assignMutation.mutate(
-      {
-        classId,
-        studentIds: Array.from(selectedUserIds),
-      },
+      { classId, studentIds: checkedIds },
       {
         onSuccess: () => {
           onClose();
@@ -85,111 +66,82 @@ export default function AssignStudentsModal({
     );
   };
 
+  // 8) Если модалка не открыта — ничего не рендерим
+  if (!isOpen) return null;
+
   return (
-    <Transition.Root show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-10" onClose={onClose}>
-        {/* Затемнение фона */}
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-50"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-50"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black" />
-        </Transition.Child>
-
-        <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
-            >
-              <Dialog.Panel className="relative w-full max-w-lg transform overflow-hidden rounded-lg bg-white p-6 text-left shadow-xl transition-all">
-                {/* Заголовок и кнопка закрытия */}
-                <div className="flex items-center justify-between mb-4">
-                  <Dialog.Title className="text-lg font-medium text-gray-900">
-                    Назначить учеников
-                  </Dialog.Title>
-                  <button
-                    type="button"
-                    className="text-gray-400 hover:text-gray-600"
-                    onClick={onClose}
-                  >
-                    <XIcon size={20} />
-                  </button>
-                </div>
-
-                {/* Поле поиска */}
-                <div className="mb-4">
-                  <input
-                    type="text"
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Поиск учеников по ФИО..."
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                  />
-                </div>
-
-                {/* Список результатов поиска + чекбоксы */}
-                <div className="max-h-64 overflow-y-auto border border-gray-200 rounded p-2">
-                  {isSearching && <p className="text-gray-500">Поиск...</p>}
-                  {!isSearching && searchQuery.trim().length === 0 && (
-                    <p className="text-gray-500">Введите имя для поиска</p>
-                  )}
-                  {!isSearching && searchQuery.trim().length > 0 && searchResults.length === 0 && (
-                    <p className="text-gray-500">Ничего не найдено</p>
-                  )}
-
-                  {!isSearching &&
-                    searchResults.map((user: User) => (
-                      <label
-                        key={user.id}
-                        className="flex items-center space-x-2 mb-2 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedUserIds.has(user.id)}
-                          onChange={() => handleToggle(user.id)}
-                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-gray-800">
-                          {user.surname} {user.name} {user.patronymic} ({user.email})
-                        </span>
-                      </label>
-                    ))}
-                </div>
-
-                {/* Кнопки */}
-                <div className="mt-6 flex justify-end space-x-2">
-                  <button
-                    type="button"
-                    className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-                    onClick={onClose}
-                  >
-                    Отмена
-                  </button>
-                  <button
-                    type="button"
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    onClick={handleSave}
-                    disabled={assignMutation.isLoading}
-                  >
-                    {assignMutation.isLoading ? 'Сохраняем…' : 'Сохранить'}
-                  </button>
-                </div>
-              </Dialog.Panel>
-            </Transition.Child>
-          </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-gray-900 text-white p-6 rounded shadow-lg w-96 max-h-[80vh] overflow-y-auto">
+        {/* Заголовок и кнопка «закрыть» */}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Назначить учеников</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            ✕
+          </button>
         </div>
-      </Dialog>
-    </Transition.Root>
+
+        {/* Строка поиска */}
+        <input
+          type="text"
+          placeholder="Поиск по ФИО..."
+          value={searchStr}
+          onChange={(e) => setSearchStr(e.target.value)}
+          className="w-full px-3 py-2 mb-3 rounded bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
+        />
+
+        {/* Если загрузка уже закреплённых ещё не завершилась */}
+        {loadingPupilsOfClass && (
+          <p className="p-2 text-center text-gray-400">Загрузка списка класса...</p>
+        )}
+
+        {/* Список результатов поиска / «свободных + своих» */}
+        <div className="max-h-64 overflow-y-auto border border-gray-700 rounded mb-4">
+          {(loadingSearchResults || loadingPupilsOfClass) ? (
+            <p className="p-2 text-center text-gray-400">Загрузка…</p>
+          ) : searchResults.length === 0 ? (
+            <p className="p-2 text-center text-gray-500">Ничего не найдено</p>
+          ) : (
+            searchResults.map((pupil) => {
+              const isChecked = checkedIds.includes(pupil.id);
+              const fio = `${pupil.user.surname} ${pupil.user.name} ${pupil.user.patronymic}`;
+
+              return (
+                <label
+                  key={pupil.id}
+                  className={`flex items-center justify-between px-3 py-2 cursor-pointer ${
+                    isChecked ? 'bg-blue-800' : 'hover:bg-gray-700'
+                  }`}
+                >
+                  <span>{fio}</span>
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleCheck(pupil.id)}
+                    className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500"
+                  />
+                </label>
+              );
+            })
+          )}
+        </div>
+
+        {/* Кнопки «Отмена» и «Сохранить» */}
+        <div className="flex justify-end space-x-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
+          >
+            Отмена
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={assignMutation.isLoading}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          >
+            {assignMutation.isLoading ? 'Сохраняем…' : 'Сохранить'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -2,8 +2,8 @@
 import apiClient from './apiClient';
 
 export interface Student {
-  id: number;       
-  userId: number;   
+  id: number;           // id записи Pupil
+  userId: number;       // id связанного User
   classId: number | null;
   user: {
     id: number;
@@ -17,28 +17,31 @@ export interface Student {
 }
 
 export const StudentAPI = {
+  /**
+   * Получить всех учеников (Pupil).
+   * GET /api/students
+   */
   getAll: (): Promise<Student[]> =>
-    apiClient.get<Student[]>('/students').then(res => res.data),
-
-  getByClass: (classId: number): Promise<Student[]> =>
-    apiClient.get<Student[]>(`/students/class/${classId}`).then(res => res.data),
-
-  create: (data: { userId: number; classId?: number }) =>
-    apiClient.post<Student>('/students', data).then(res => res.data),
-
-  update: (id: number, data: { classId?: number }) =>
-    apiClient.patch<Student>(`/students/${id}`, data).then(res => res.data),
-
-  deleteStudent: (id: number) =>
-    apiClient.delete<void>(`/students/${id}`),
+    apiClient.get<Student[]>('/students').then((res) => res.data),
 
   /**
-   * Поиск учеников по query.
-   * GET /students/search?query=...
+   * Поиск учеников по query (часть ФИО).
+   * GET /api/students/search?query=…
    */
-  search: (query: string): Promise<Student[]> => {
-    return apiClient
-      .get<Student[]>('/students/search', { params: { query } })
-      .then(res => res.data);
-  },
+  search: (query: string): Promise<Student[]> =>
+    apiClient.get<Student[]>('/students/search', { params: { query } }).then((res) => res.data),
+
+  /**
+   * Получить всех учеников, закреплённых за данным классом.
+   * GET /api/students/class/:classId
+   */
+  getByClass: (classId: number): Promise<Student[]> =>
+    apiClient.get<Student[]>(`/students/class/${classId}`).then((res) => res.data),
+
+  /**
+   * После галочек отправляем список pupil.id, чтобы бэкенд обновил classId.
+   * POST /api/classes/:classId/students  body: { studentIds: number[] }
+   */
+  assignToClass: (classId: number, studentIds: number[]): Promise<void> =>
+    apiClient.post<void>(`/classes/${classId}/students`, { studentIds }).then(() => {}),
 };
