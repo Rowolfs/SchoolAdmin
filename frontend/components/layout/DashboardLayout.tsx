@@ -3,7 +3,7 @@
 
 import React, { ReactNode, use, useState } from 'react'
 import { useRouter } from 'next/router'
-import { actionConfig, ActionButton } from '@/utils/actionConfig'
+
 
 interface MenuItem {
   title: string
@@ -14,8 +14,6 @@ const menuConfig: Record<'ADMIN'|'TEACHER'|'STUDENT', MenuItem[]> = {
   ADMIN: [
     { title: 'Панель', path: '/dashboard' },
     { title: 'Пользователи', path: '/dashboard/users' },
-    { title: 'Учителя', path: '/dashboard/teachers' },
-    { title: 'Ученики', path: '/dashboard/students' },
     { title: 'Классы', path: '/dashboard/classes' },
   ],
   TEACHER: [
@@ -45,14 +43,15 @@ export default function DashboardLayout({ user, children }: DashboardLayoutProps
   const router = useRouter()
   const [drawerOpen, setDrawerOpen] = useState(false)
 
+  // Получаем пункты меню для роли пользователя
+  const items = menuConfig[user.role];
+
   // Ждём, пока user и role загрузятся
   if (!user || !user.role) {
     return <div>Загрузка...</div>
   }
 
-  // Приводим роль к нижнему регистру для lookup в конфигах
-  const items = menuConfig[user.role] || []
-  const actions: ActionButton[] = actionConfig[user.role] || []
+
 
   return (
     <div className="flex min-h-screen">
@@ -130,22 +129,6 @@ export default function DashboardLayout({ user, children }: DashboardLayoutProps
       <main className="flex-grow bg-gray-100 p-6 flex flex-col">
         {/* здесь рендерим children */}
         {children}
-
-        {/* панель кнопок */}
-        <div className="mt-6 flex flex-wrap gap-3">
-          {actions.map(btn => (
-            <button
-              key={btn.id}
-              onClick={btn.onClick ?? (() => btn.path && router.push(btn.path))}
-              className={`px-4 py-2 rounded font-medium
-                ${btn.variant === 'primary'   ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
-                ${btn.variant === 'secondary' ? 'bg-gray-200 hover:bg-gray-300 text-gray-800' : ''}
-                ${btn.variant === 'danger'    ? 'bg-red-600 hover:bg-red-700 text-white' : ''}`}
-            >
-              {btn.label}
-            </button>
-          ))}
-        </div>
       </main>
     </div>
   )

@@ -3,7 +3,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
-const teachersRouter = require('./routers/teachers.router');
+const teacherRouter = require('./routers/teacher.router');
 const registerRouter = require('./routers/register.router');
 const loginRouter = require('./routers/login.router');
 const userRouter = require('./routers/user.router');
@@ -29,7 +29,7 @@ app.use(cors({
 app.options('*', cors());
 
 // теперь все ваши маршруты уже «под» этим CORS-мидлваром
-app.use('/api/teachers', teachersRouter);
+app.use('/api/teachers', teacherRouter);
 app.use('/api/auth/register', registerRouter);
 app.use('/api/auth/login', loginRouter);
 app.use('/api/users', userRouter);

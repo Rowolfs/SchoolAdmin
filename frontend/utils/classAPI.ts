@@ -1,5 +1,4 @@
 // frontend/utils/classAPI.ts
-
 import apiClient from './apiClient';
 
 export interface Class {
@@ -21,21 +20,48 @@ export interface Class {
 }
 
 export const ClassAPI = {
+  /**
+   * GET /api/classes
+   */
   getAll: (): Promise<Class[]> => {
     return apiClient.get<Class[]>('/classes').then((res) => res.data);
   },
 
+  /**
+   * POST /api/classes
+   */
   create: (data: { name: string; classTeacher?: number }): Promise<Class> => {
     return apiClient.post<Class>('/classes', data).then((res) => res.data);
   },
 
+  /**
+   * DELETE /api/classes/:id
+   */
   remove: (id: number): Promise<void> => {
     return apiClient.delete(`/classes/${id}`).then(() => {});
   },
 
-  assignStudents: (classId: number, studentIds: number[]): Promise<Class> => {
+  /**
+   * PATCH /api/classes/:id
+   * Если data.classTeacher = null, будет отправлено { "classTeacher": null }
+   */
+  updateClass: (id: number, data: { classTeacher?: number | null }): Promise<Class> => {
     return apiClient
-      .post<Class>(`/classes/${classId}/students`, { studentIds })
+      .patch<Class>(`/classes/${id}`, data)
+      .then((res) => res.data);
+  },
+
+  /**
+   * POST /api/classes/:id/students
+   */
+  assignStudents: (classId: number, studentIds: number[]): Promise<
+    { id: number; user: { name: string; surname: string; patronymic: string } }[]
+  > => {
+    return apiClient
+      .post<{ id: number; user: { name: string; surname: string; patronymic: string } }[]>(
+        `/classes/${classId}/students`,
+        { studentIds }
+      )
       .then((res) => res.data);
   },
 };

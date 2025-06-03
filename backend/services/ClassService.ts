@@ -93,15 +93,20 @@ class ClassService {
    * Обновить существующий класс (назначить/сменить учителя)
    * changes: { classTeacher?: number | null }
    */
+
   static async updateClass(id, changes) {
-    return prisma.class.update({
+    const dataToUpdate = {};
+    if (changes.classTeacher !== undefined) {
+      dataToUpdate.classTeacher = changes.classTeacher;
+    }
+    const updated = await prisma.class.update({
       where: { id },
-      data: {
-        classTeacher:
-          changes.classTeacher !== undefined ? changes.classTeacher : undefined,
-      },
+      data: dataToUpdate,
+      // …include…
     });
+    return updated;
   }
+
 
   /**
    * Soft-delete класса: выставить deletedAt = now()

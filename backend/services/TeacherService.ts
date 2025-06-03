@@ -4,8 +4,8 @@ const prisma = PrismaSingelton.getInstance();
 
 class TeacherService {
   /**
-   * Получить всех активных преподавателей
-   * Возвращает данные учителя вместе с информацией о пользователе
+   * 1) Получить всех активных преподавателей.
+   *    Возвращаем id, ФИО (из связанного User), email и classroomNumber.
    */
   async getAllTeachers() {
     const teachers = await prisma.teacher.findMany({
@@ -24,9 +24,11 @@ class TeacherService {
         },
         classroomNumber: true,
         createdAt: true
-      }
+      },
+      orderBy: { id: 'asc' }
     });
 
+    // Преобразуем немного в более плоскую структуру, если хочется
     return teachers.map(t => ({
       id: t.id,
       user: {
@@ -43,7 +45,7 @@ class TeacherService {
   }
 
   /**
-   * Получить преподавателя по userId
+   * 2) Получить одного преподавателя по его userId (не обязательно для назначения, но пригодится).
    */
   async getByUserId(userId) {
     const teacher = await prisma.teacher.findFirst({
@@ -58,80 +60,7 @@ class TeacherService {
   }
 
   /**
-   * Обновить данные преподавателя
-   */
-async updateUser(userId: number, payload: { name?: string; surname?: string; patronymic?: string; role?: string; classId?: number; classroomNumber?: string }) {
-  const { name, surname, patronymic, role: newRoleName, classId, classroomNumber } = payload;
-
-  // 1) Получаем старую роль
-  const existing = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: { select: { name: true } } }
-  });
-  if (!existing) throw new Error(`User с id=${userId} не найден`);
-  const oldRole = existing.role.name;
-
-  // 2) Собираем data для обновления User
-  const data: any = {};
-  if (name !== undefined)       data.name = name;
-  if (surname !== undefined)    data.surname = surname;
-  if (patronymic !== undefined) data.patronymic = patronymic;
-  if (newRoleName !== undefined) {
-    data.role = { connect: { name: newRoleName } };
-  }
-
-  // 3) Если новая роль — TEACHER, а старая ≠ TEACHER → создаём Teacher
-  if (newRoleName === 'TEACHER' && oldRole !== 'TEACHER') {
-    // Обязательно задаём, как минимум, user.connect.
-    // Допустим, для Teacher требуется classroomNumber (можно оставить пустым или взять из payload).
-    await prisma.teacher.create({
-      data: {
-        user: { connect: { id: userId } },
-        classroomNumber: classroomNumber ?? '' // если не передали, ставим пустую строку
-        // Если нужно связать с Class, добавить: classClass: { connect: { id: classId! } }
-      }
-    });
-  }
-
-  // 4) Если старая роль — TEACHER, а новая ≠ TEACHER → soft-delete Teacher
-  if (oldRole === 'TEACHER' && newRoleName !== 'TEACHER') {
-    await prisma.teacher.updateMany({
-      where: { userId },
-      data: { deletedAt: new Date() }
-    });
-  }
-
-  // 5) Если новая роль — STUDENT (обработка Pupil)…
-
-  // 6) Наконец, обновляем самого User
-  const updated = await prisma.user.update({
-    where: { id: userId },
-    data,
-    select: {
-      id: true,
-      name: true,
-      surname: true,
-      patronymic: true,
-      email: true,
-      role: { select: { name: true } },
-      createdAt: true
-    }
-  });
-
-  return {
-    id: updated.id,
-    name: updated.name,
-    surname: updated.surname,
-    patronymic: updated.patronymic,
-    email: updated.email,
-    role: updated.role.name,
-    createdAt: updated.createdAt
-  };
-}
-
-
-  /**
-   * Soft-delete преподавателя
+   * 3) Soft-delete преподавателя по его userId
    */
   async deleteTeacher(userId) {
     await prisma.teacher.updateMany({
@@ -142,7 +71,7 @@ async updateUser(userId: number, payload: { name?: string; surname?: string; pat
   }
 
   /**
-   * Восстановить преподавателя (если ранее был soft-deleted)
+   * 4) Восстановить преподавателя (soft-undelete) по userId
    */
   async restoreTeacher(userId) {
     await prisma.teacher.updateMany({

@@ -1,96 +1,111 @@
 // frontend/pages/dashboard/classes.tsx
-import React, { useMemo, useState } from 'react'
-import { NextPage, GetServerSideProps } from 'next'
-import DashboardLayout from '../../components/layout/DashboardLayout'
-import DataTable from '../../components/DataTable'
-import { ColumnDef } from '@tanstack/react-table'
-import { Class } from '../../utils/classAPI'
-import { useQueryClient } from '@tanstack/react-query'
-import { useClasses, useCreateClass, useDeleteClass } from '../../hooks/useClasses'
-import AssignStudentsModal from '../../components/AssignStudentsModal'
-import { verifyTokenOnServer, UserPayload } from '../../utils/authAPI'
+import React, { useMemo, useState } from 'react';
+import { NextPage, GetServerSideProps } from 'next';
+import DashboardLayout from '../../components/layout/DashboardLayout';
+import DataTable from '../../components/DataTable';
+import { ColumnDef } from '@tanstack/react-table';
+import { Class } from '../../utils/classAPI';
+import { useQueryClient } from '@tanstack/react-query';
+import { useClasses, useCreateClass, useDeleteClass } from '../../hooks/useClasses';
+import { useStudentsByClass } from '../../hooks/useStudentsByClass';
+import AssignStudentsModal from '../../components/AssignStudentsModal';
+import AssignTeacherModal from '../../components/AssignTeacherModal';
+import { verifyTokenOnServer, UserPayload } from '../../utils/authAPI';
 
 interface ClassesPageProps {
-  user: UserPayload
+  user: UserPayload;
 }
 
 const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
-  const { data: classes = [], isLoading, isError } = useClasses()
-  const queryClient = useQueryClient()
-  const createMutation = useCreateClass()
-  const deleteMutation = useDeleteClass()
+  const { data: classes = [], isLoading, isError } = useClasses();
+  const queryClient = useQueryClient();
+  const createMutation = useCreateClass();
+  const deleteMutation = useDeleteClass();
 
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [newClassName, setNewClassName] = useState('')
-  const [newClassTeacherId, setNewClassTeacherId] = useState<number | ''>('')
-  const [isAssignOpen, setIsAssignOpen] = useState(false)
-  const [activeClassId, setActiveClassId] = useState<number | null>(null)
-  const [existingUserIds, setExistingUserIds] = useState<number[]>([])
+  // state для создания нового класса
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newClassName, setNewClassName] = useState('');
+  const [newClassTeacherId, setNewClassTeacherId] = useState<number | ''>('');
 
-  const columns = useMemo<ColumnDef<Class>[]>(
-    () => [
-      { header: 'ID', accessorKey: 'id' },
-      { header: 'Название', accessorKey: 'name' },
-      {
-        header: 'Учитель',
-        accessorKey: 'teacher',
-        cell: ({ row }) => {
-          const cls = row.original
-          if (cls.teacher) {
-            return (
-              <span>
-                {cls.teacher.user.surname} {cls.teacher.user.name} {cls.teacher.user.patronymic}
-              </span>
-            )
-          }
-          return <span>-</span>
-        },
-      },
-      {
-        header: 'Ученики',
-        accessorKey: 'pupils',
-        cell: ({ row }) => <span>{row.original.pupils?.length ?? 0}</span>,
-      },
-      {
-        header: 'Действия',
-        accessorKey: 'actions',
-        cell: ({ row }) => {
-          const cls = row.original
+  // state для AssignStudentsModal
+  const [isAssignStudentsOpen, setIsAssignStudentsOpen] = useState(false);
+  const [activeClassIdForStudents, setActiveClassIdForStudents] = useState<number | null>(null);
+  const { data: pupilsOfActiveClass = [] } = useStudentsByClass(activeClassIdForStudents ?? 0);
+
+  // state для AssignTeacherModal
+  const [isAssignTeacherOpen, setIsAssignTeacherOpen] = useState(false);
+  const [activeClassIdForTeacher, setActiveClassIdForTeacher] = useState<number | null>(null);
+
+  // Колонки таблицы
+  const columns = useMemo<ColumnDef<Class>[]>(() => [
+    { header: 'ID', accessorKey: 'id' },
+    { header: 'Название', accessorKey: 'name' },
+    {
+      header: 'Учитель',
+      accessorKey: 'teacher',
+      cell: ({ row }) => {
+        const cls = row.original;
+        if (cls.teacher) {
           return (
-            <div className="flex space-x-4">
-              <button
-                className="text-purple-600 hover:underline"
-                onClick={() => openAssignModal(cls)}
-              >
-                Назначить учеников
-              </button>
-              <button
-                className="text-red-600 hover:underline"
-                onClick={() => deleteMutation.mutate(cls.id)}
-              >
-                Удалить
-              </button>
-            </div>
-          )
-        },
+            <span>
+              {cls.teacher.user.surname} {cls.teacher.user.name} {cls.teacher.user.patronymic}
+            </span>
+          );
+        }
+        return <span className="italic text-gray-500">—</span>;
       },
-    ],
-    [deleteMutation]
-  )
+    },
+    {
+      header: 'Ученики',
+      accessorKey: 'pupils',
+      cell: ({ row }) => <span>{row.original.pupils?.length ?? 0}</span>,
+    },
+    {
+      header: 'Действия',
+      accessorKey: 'actions',
+      cell: ({ row }) => {
+        const cls = row.original;
+        return (
+          <div className="flex flex-col space-y-1">
+            <button
+              className="text-purple-600 hover:underline"
+              onClick={() => {
+                setActiveClassIdForStudents(cls.id);
+                setIsAssignStudentsOpen(true);
+              }}
+            >
+              Назначить учеников
+            </button>
+            <button
+              className="text-blue-600 hover:underline"
+              onClick={() => {
+                setActiveClassIdForTeacher(cls.id);
+                setIsAssignTeacherOpen(true);
+              }}
+            >
+              Назначить преподавателя
+            </button>
+            <button
+              className="text-red-600 hover:underline"
+              onClick={() => deleteMutation.mutate(cls.id)}
+            >
+              Удалить
+            </button>
+          </div>
+        );
+      },
+    },
+  ], [deleteMutation]);
 
+  // Функции открытия/закрытия модалок и создания класса
   const openCreateModal = () => {
-    setNewClassName('')
-    setNewClassTeacherId('')
-    setIsCreateOpen(true)
-  }
-
-  const closeCreateModal = () => {
-    setIsCreateOpen(false)
-  }
-
+    setNewClassName('');
+    setNewClassTeacherId('');
+    setIsCreateOpen(true);
+  };
+  const closeCreateModal = () => setIsCreateOpen(false);
   const handleCreateClass = () => {
-    if (!newClassName.trim()) return
-
+    if (!newClassName.trim()) return;
     createMutation.mutate(
       {
         name: newClassName.trim(),
@@ -98,25 +113,22 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
       },
       {
         onSuccess: () => {
-          closeCreateModal()
-          setNewClassName('')
-          setNewClassTeacherId('')
+          closeCreateModal();
+          setNewClassName('');
+          setNewClassTeacherId('');
         },
       }
-    )
-  }
+    );
+  };
 
-  const openAssignModal = (cls: Class) => {
-    setActiveClassId(cls.id)
-    setExistingUserIds(cls.pupils?.map((p) => p.userId) || [])
-    setIsAssignOpen(true)
-  }
-
-  const closeAssignModal = () => {
-    setActiveClassId(null)
-    setExistingUserIds([])
-    setIsAssignOpen(false)
-  }
+  const closeAssignStudentsModal = () => {
+    setActiveClassIdForStudents(null);
+    setIsAssignStudentsOpen(false);
+  };
+  const closeAssignTeacherModal = () => {
+    setActiveClassIdForTeacher(null);
+    setIsAssignTeacherOpen(false);
+  };
 
   if (isError) {
     return (
@@ -125,9 +137,8 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
           <p className="text-red-500">Ошибка при загрузке классов</p>
         </div>
       </DashboardLayout>
-    )
+    );
   }
-
   if (isLoading) {
     return (
       <DashboardLayout user={user}>
@@ -135,7 +146,7 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
           <p>Загрузка...</p>
         </div>
       </DashboardLayout>
-    )
+    );
   }
 
   return (
@@ -153,6 +164,7 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
 
         <DataTable columns={columns} data={classes} isLoading={false} />
 
+        {/* Модалка создания класса */}
         {isCreateOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
             <div className="bg-white p-6 rounded shadow-lg w-80">
@@ -166,7 +178,7 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
               />
               <input
                 type="number"
-                placeholder="Классный руководитель"
+                placeholder="ID учителя (опционально)"
                 value={newClassTeacherId}
                 onChange={(e) =>
                   setNewClassTeacherId(e.target.value === '' ? '' : Number(e.target.value))
@@ -191,42 +203,47 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
           </div>
         )}
 
-        {activeClassId !== null && (
+        {/* Модалка назначения учеников */}
+        {isAssignStudentsOpen && activeClassIdForStudents !== null && (
           <AssignStudentsModal
-            isOpen={isAssignOpen}
-            onClose={closeAssignModal}
-            classId={activeClassId}
-            existingUserIds={existingUserIds}
+            isOpen={isAssignStudentsOpen}
+            onClose={closeAssignStudentsModal}
+            classId={activeClassIdForStudents}
+            existingUserIds={pupilsOfActiveClass.map(p => p.id)}
+          />
+        )}
+
+        {/* Модалка назначения преподавателя */}
+        {isAssignTeacherOpen && activeClassIdForTeacher !== null && (
+          <AssignTeacherModal
+            isOpen={isAssignTeacherOpen}
+            onClose={closeAssignTeacherModal}
+            classId={activeClassIdForTeacher}
+            existingTeacherId={
+              classes.find(c => c.id === activeClassIdForTeacher)?.classTeacher ?? null
+            }
           />
         )}
       </div>
     </DashboardLayout>
-  )
-}
+  );
+};
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const user: UserPayload | null = await verifyTokenOnServer(ctx)
-
+  const user: UserPayload | null = await verifyTokenOnServer(ctx);
   if (!user) {
     return {
-      redirect: {
-        destination: '/auth/login',
-        permanent: false,
-      },
-    }
+      redirect: { destination: '/auth/login', permanent: false },
+    };
   }
   if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
     return {
-      redirect: {
-        destination: '/dashboard',
-        permanent: false,
-      },
-    }
+      redirect: { destination: '/dashboard', permanent: false },
+    };
   }
-
   return {
     props: { user },
-  }
-}
+  };
+};
 
-export default ClassesPage
+export default ClassesPage;
