@@ -154,6 +154,34 @@ class ClassService {
       },
     });
   }
+
+
+  static async assignDisciplineToClass(classId, disciplineId){
+    await prisma.markRecord.update({
+      where: {id: classId},
+      data: {disciplineId}
+    })
+
+    return prisma.class.findUnique({
+      where: { id: { in: classId } },
+      select: {
+        id: true,
+        name: true,
+        discipline: {
+          select: {
+              name: true,
+          },
+        },
+      },
+
+
+
+    })
+
+
+
+
+  }
 }
 
 module.exports = ClassService;

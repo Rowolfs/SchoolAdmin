@@ -1,3 +1,5 @@
+// prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,6 +9,145 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+///
+/// Модель Class: информацию о классах, их руководителях и связи с журналом
+///
+model Class {
+  id           Int                              @id @default(autoincrement())
+  name         String                           @unique
+  classTeacher Int?                             @unique
+  teacher      Teacher?                         @relation("ClassTeacher", fields: [classTeacher], references: [id], onDelete: SetNull)
+  pupils       Pupil[]
+
+  // Записи «учитель–дисциплина–класс–ученик/оценка»
+  journalEntries DisciplineTeacherPupilsMark[]  @relation("ClassJournalEntries")
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+}
+
+///
+/// Модель Discipline: справочник предметов и связи с журналом
+///
+model Discipline {
+  id                  Int                             @id @default(autoincrement())
+  name                String
+  description         String
+
+  // Связь «учителя, который ведет этот предмет»
+  disciplineTeachers  DisciplineTeacher[]
+
+  // Записи «учитель–дисциплина–класс–ученик/оценка»
+  journalEntries      DisciplineTeacherPupilsMark[]  @relation("DisciplineJournalEntries")
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  deletedAt           DateTime?
+}
+
+///
+/// Модель Teacher: учитель, привязанный к пользователю, и связи с дисциплинами/журналом
+///
+model Teacher {
+  id                    Int                             @id @default(autoincrement())
+  userId                Int                             @unique
+  classroomNumber       String?
+
+  user                  User                            @relation("UserTeacher", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Связь «какой учитель ведет какие дисциплины»
+  disciplines           DisciplineTeacher[]
+
+  // Записи «учитель–дисциплина–класс–ученик/оценка»
+  journalEntries        DisciplineTeacherPupilsMark[]  @relation("TeacherJournalEntries")
+
+  // Если этот учитель – классный руководитель
+  classTaught           Class[]                         @relation("ClassTeacher")
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  deletedAt             DateTime?
+}
+
+///
+/// Модель DisciplineTeacher: связывает конкретного учителя и предмет.
+/// На неё ссылаются записи журнала.
+///
+model DisciplineTeacher {
+  id            Int                             @id @default(autoincrement())
+  disciplineId  Int
+  teacherId     Int
+
+  discipline    Discipline                      @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  teacher       Teacher                         @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  // Записи «учитель–дисциплина–класс–ученик/оценка»
+  journalEntries DisciplineTeacherPupilsMark[]  @relation("DisciplineTeacherJournalEntries")
+
+  @@unique([disciplineId, teacherId])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+}
+
+///
+/// Модель Pupil: ученик, привязанный к пользователю и классу, и связь с журналом
+///
+model Pupil {
+  id                 Int                             @id @default(autoincrement())
+  userId             Int                             @unique
+  classId            Int?
+
+  user               User                            @relation("UserPupil", fields: [userId], references: [id], onDelete: Cascade)
+  class              Class?                          @relation(fields: [classId], references: [id], onDelete: Restrict)
+
+  // Записи «учитель–дисциплина–класс–ученик/оценка»
+  journalEntries     DisciplineTeacherPupilsMark[]  @relation("PupilJournalEntries")
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  deletedAt          DateTime?
+}
+
+///
+/// Универсальная модель журнала для связей «дисциплина–учитель–класс–ученик–оценка»
+///
+model DisciplineTeacherPupilsMark {
+  id                   Int                  @id @default(autoincrement())
+
+  disciplineTeacherId  Int
+  classId              Int?
+  pupilId              Int?
+  mark                 Float?               // если null — это «привязка», иначе это оценка
+  quarter              Int?                 // от 1 до 4 (используется только для оценок)
+
+  // Связи на уровне «учитель–дисциплина»
+  disciplineTeacher    DisciplineTeacher    @relation("DisciplineTeacherJournalEntries", fields: [disciplineTeacherId], references: [id], onDelete: Cascade)
+
+  // Дополнительные поля для удобного доступа к «дисциплине» и «учителю» напрямую
+  disciplineId         Int?                 
+  teacherId            Int?                 
+
+  discipline           Discipline?          @relation("DisciplineJournalEntries", fields: [disciplineId], references: [id])
+  teacher              Teacher?             @relation("TeacherJournalEntries", fields: [teacherId], references: [id])
+
+  // Связь с классом (классная привязка) и учеником (ученическая привязка)
+  class                Class?               @relation("ClassJournalEntries", fields: [classId], references: [id], onDelete: Cascade)
+  pupil                Pupil?               @relation("PupilJournalEntries", fields: [pupilId], references: [id], onDelete: Cascade)
+
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@index([classId, disciplineTeacherId])
+  @@index([pupilId, disciplineTeacherId])
+  @@index([disciplineTeacherId])
+}
+
+///
+/// Модель User: учетная запись (без изменений, с метаданными)
+///
 model User {
   id         Int       @id @default(autoincrement())
   email      String    @unique
@@ -25,6 +166,9 @@ model User {
   pupil      Pupil?    @relation("UserPupil")
 }
 
+///
+/// Модель Role: роли пользователей (без изменений)
+///
 model Role {
   id         Int       @id @default(autoincrement())
   name       String    @unique
@@ -34,98 +178,4 @@ model Role {
   deletedAt  DateTime?
 
   users      User[]
-}
-
-model Class {
-  id           Int                     @id @default(autoincrement())
-  classTeacher Int?      @unique
-  name         String    @unique
-
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  deletedAt    DateTime?
-
-  teacher      Teacher?   @relation("ClassTeacher", fields: [classTeacher], references: [id], onDelete: SetNull)
-  pupils       Pupil[]
-  disciplines  ClassesDisciplines[]
-}
-
-model Teacher {
-  id              Int                    @id @default(autoincrement())
-  userId          Int                    @unique
-  classroomNumber String?
-
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
-  deletedAt       DateTime?
-
-  user            User                   @relation("UserTeacher", fields: [userId], references: [id], onDelete: Cascade)
-  classClass      Class?                 @relation("ClassTeacher")
-  disciplines     TeachersDisciplines[]
-}
-
-model Pupil {
-  id         Int                    @id @default(autoincrement())
-  userId     Int                    @unique
-  classId    Int?
-
-  createdAt  DateTime               @default(now())
-  updatedAt  DateTime               @updatedAt
-  deletedAt  DateTime?
-
-  user       User                   @relation("UserPupil", fields: [userId], references: [id], onDelete: Cascade)
-  class      Class?                  @relation(fields: [classId], references: [id], onDelete: Restrict)
-  marks      DisciplinePupilsMark[]
-}
-
-model Discipline {
-  id          Int                   @id @default(autoincrement())
-  name        String
-  description String
-
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-  deletedAt   DateTime?
-
-  teachers    TeachersDisciplines[]
-  classes     ClassesDisciplines[]
-  marks       DisciplinePupilsMark[]
-}
-
-model TeachersDisciplines {
-  teacherId    Int
-  disciplineId Int
-
-  teacher    Teacher    @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  discipline Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
-
-  @@id([teacherId, disciplineId])
-}
-
-model ClassesDisciplines {
-  classId      Int
-  disciplineId Int
-
-  class      Class      @relation(fields: [classId], references: [id], onDelete: Cascade)
-  discipline Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
-
-  @@id([classId, disciplineId])
-}
-
-model DisciplinePupilsMark {
-  disciplineId Int
-  pupilId      Int
-  quarter      Int
-  mark         Int
-
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-
-  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
-  pupil        Pupil      @relation(fields: [pupilId], references: [id], onDelete: Cascade)
-
-  @@id([disciplineId, pupilId, quarter])
-  @@index([pupilId])
-  @@index([quarter])
-  @@index([pupilId, quarter])
 }
