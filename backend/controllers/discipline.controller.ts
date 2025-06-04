@@ -1,32 +1,8 @@
 // backend/controllers/discipline.controller.ts
 const DisciplineService = require('../services/DisciplineService');
 
-/**
- * @swagger
- * tags:
- *   - name: Disciplines
- *     description: Эндпоинты для работы с дисциплинами
- */
 class DisciplineController {
-  /**
-   * @swagger
-   * /api/disciplines:
-   *   get:
-   *     summary: Получить все дисциплины
-   *     tags:
-   *       - Disciplines
-   *     responses:
-   *       200:
-   *         description: Список дисциплин
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: array
-   *               items:
-   *                 $ref: '#/components/schemas/Discipline'
-   *       500:
-   *         description: Ошибка загрузки дисциплин
-   */
+  // GET /api/disciplines
   static async getAll(req, res) {
     try {
       const disciplines = await DisciplineService.getAllDisciplines();
@@ -37,191 +13,71 @@ class DisciplineController {
     }
   }
 
-  /**
-   * @swagger
-   * /api/disciplines:
-   *   post:
-   *     summary: Создать новую дисциплину
-   *     tags:
-   *       - Disciplines
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             required:
-   *               - name
-   *             properties:
-   *               name:
-   *                 type: string
-   *                 example: Математика
-   *               description:
-   *                 type: string
-   *                 example: Дисциплина для изучения алгебры и геометрии
-   *     responses:
-   *       201:
-   *         description: Дисциплина создана
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Discipline'
-   *       400:
-   *         description: Поле name обязательно
-   *       500:
-   *         description: Ошибка при создании дисциплины
-   */
+  // POST /api/disciplines
   static async create(req, res) {
     try {
       const { name, description } = req.body;
-      if (!name) {
-        return res
-          .status(400)
-          .json({ message: 'Поле name обязательно' });
+      if (!name || typeof name !== 'string') {
+        return res.status(400).json({ message: 'Поле name обязательно и должно быть строкой' });
       }
-      const newDisc = await DisciplineService.createDiscipline({ name, description });
-      return res
-        .status(201)
-        .json({ id: newDisc.id, name: newDisc.name, description: newDisc.description, teachers: [] });
+      const newDisc = await DisciplineService.createDiscipline({ name: name.trim(), description });
+      return res.status(201).json({
+        id: newDisc.id,
+        name: newDisc.name,
+        description: newDisc.description,
+      });
     } catch (error) {
       console.error('DisciplineController.create error:', error);
       return res.status(500).json({ message: 'Ошибка при создании дисциплины' });
     }
   }
 
-  /**
-   * @swagger
-   * /api/disciplines/{id}:
-   *   delete:
-   *     summary: Удалить дисциплину
-   *     tags:
-   *       - Disciplines
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         schema:
-   *           type: integer
-   *         required: true
-   *         description: ID удаляемой дисциплины
-   *     responses:
-   *       204:
-   *         description: Дисциплина успешно удалена
-   *       400:
-   *         description: Неверный ID дисциплины
-   *       500:
-   *         description: Ошибка при удалении дисциплины
-   */
+  // DELETE /api/disciplines/:id
   static async remove(req, res) {
     try {
-      const disciplineId = parseInt(req.params.id, 10);
-      if (isNaN(disciplineId)) {
+      const disciplineId = Number(req.params.id);
+      if (Number.isNaN(disciplineId)) {
         return res.status(400).json({ message: 'Неправильный ID дисциплины' });
       }
       await DisciplineService.deleteDiscipline(disciplineId);
-      return res.status(204).end();
+      return res.sendStatus(204);
     } catch (error) {
       console.error('DisciplineController.remove error:', error);
       return res.status(500).json({ message: 'Ошибка при удалении дисциплины' });
     }
   }
 
-  /**
-   * @swagger
-   * /api/disciplines/{id}/teachers:
-   *   get:
-   *     summary: Получить преподавателей по дисциплине
-   *     tags:
-   *       - Disciplines
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         schema:
-   *           type: integer
-   *         required: true
-   *         description: ID дисциплины
-   *     responses:
-   *       200:
-   *         description: Список преподавателей
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: array
-   *               items:
-   *                 $ref: '#/components/schemas/Teacher'
-   *       400:
-   *         description: Неверный ID дисциплины
-   *       500:
-   *         description: Ошибка загрузки преподавателей
-   */
+  // GET /api/disciplines/:id/teachers
   static async getTeachers(req, res) {
     try {
-      const disciplineId = parseInt(req.params.id, 10);
-      if (isNaN(disciplineId)) {
+      const disciplineId = Number(req.params.id);
+      if (Number.isNaN(disciplineId)) {
         return res.status(400).json({ message: 'Неправильный ID дисциплины' });
       }
       const teachers = await DisciplineService.getTeachersByDiscipline(disciplineId);
       return res.status(200).json(teachers);
     } catch (error) {
       console.error('DisciplineController.getTeachers error:', error);
-      return res
-        .status(500)
-        .json({ message: 'Ошибка загрузки преподавателей для дисциплины' });
+      return res.status(500).json({ message: 'Ошибка загрузки преподавателей для дисциплины' });
     }
   }
 
-  /**
-   * @swagger
-   * /api/disciplines/{id}/teachers:
-   *   put:
-   *     summary: Назначить преподавателей дисциплине
-   *     tags:
-   *       - Disciplines
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         schema:
-   *           type: integer
-   *         required: true
-   *         description: ID дисциплины
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             properties:
-   *               teacherIds:
-   *                 type: array
-   *                 items:
-   *                   type: integer
-   *                 example: [1, 2, 3]
-   *     responses:
-   *       204:
-   *         description: Преподаватели успешно назначены
-   *       400:
-   *         description: Неверный ID дисциплины или teacherIds не массив
-   *       500:
-   *         description: Ошибка при назначении преподавателей
-   */
+  // PUT /api/disciplines/:id/teachers
   static async assignTeachers(req, res) {
     try {
-      const disciplineId = parseInt(req.params.id, 10);
-      if (isNaN(disciplineId)) {
+      const disciplineId = Number(req.params.id);
+      if (Number.isNaN(disciplineId)) {
         return res.status(400).json({ message: 'Неправильный ID дисциплины' });
       }
       const { teacherIds } = req.body;
-      if (!Array.isArray(teacherIds)) {
-        return res
-          .status(400)
-          .json({ message: 'teacherIds должен быть массивом чисел' });
+      if (!Array.isArray(teacherIds) || teacherIds.some(id => typeof id !== 'number')) {
+        return res.status(400).json({ message: 'teacherIds должен быть массивом чисел' });
       }
       await DisciplineService.assignTeachersToDiscipline(disciplineId, teacherIds);
-      return res.status(204).end();
+      return res.sendStatus(204);
     } catch (error) {
       console.error('DisciplineController.assignTeachers error:', error);
-      return res
-        .status(500)
-        .json({ message: 'Ошибка при назначении преподавателей' });
+      return res.status(500).json({ message: 'Ошибка при назначении преподавателей' });
     }
   }
 }

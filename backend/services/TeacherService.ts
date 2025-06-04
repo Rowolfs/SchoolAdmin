@@ -1,6 +1,6 @@
-// backend/services/TeacherService.js
-const PrismaSingelton = require('../prisma/client');
-const prisma = PrismaSingelton.getInstance();
+// backend/services/TeacherService.ts
+const PrismaSingleton = require('../prisma/client');
+const prisma = PrismaSingleton.getInstance();
 
 class TeacherService {
   /**
@@ -19,17 +19,16 @@ class TeacherService {
             surname: true,
             patronymic: true,
             email: true,
-            role: { select: { name: true } }
-          }
+            role: { select: { name: true } },
+          },
         },
         classroomNumber: true,
-        createdAt: true
+        createdAt: true,
       },
-      orderBy: { id: 'asc' }
+      orderBy: { id: 'asc' },
     });
 
-    // Преобразуем немного в более плоскую структуру, если хочется
-    return teachers.map(t => ({
+    return teachers.map((t) => ({
       id: t.id,
       user: {
         id: t.user.id,
@@ -37,15 +36,15 @@ class TeacherService {
         surname: t.user.surname,
         patronymic: t.user.patronymic,
         email: t.user.email,
-        role: t.user.role.name
+        role: t.user.role.name,
       },
       classroomNumber: t.classroomNumber,
-      createdAt: t.createdAt
+      createdAt: t.createdAt,
     }));
   }
 
   /**
-   * 2) Получить одного преподавателя по его userId (не обязательно для назначения, но пригодится).
+   * 2) Получить одного преподавателя по его userId.
    */
   async getByUserId(userId) {
     const teacher = await prisma.teacher.findFirst({
@@ -53,32 +52,60 @@ class TeacherService {
       select: {
         id: true,
         classroomNumber: true,
-        createdAt: true
-      }
+        createdAt: true,
+      },
     });
     return teacher || null;
   }
 
   /**
-   * 3) Soft-delete преподавателя по его userId
+   * 3) Soft-delete преподавателя по его userId.
    */
   async deleteTeacher(userId) {
     await prisma.teacher.updateMany({
-      where: { userId },
-      data: { deletedAt: new Date() }
+      where: { userId, deletedAt: null },
+      data: { deletedAt: new Date() },
     });
     return { success: true };
   }
 
   /**
-   * 4) Восстановить преподавателя (soft-undelete) по userId
+   * 4) Восстановить преподавателя (soft-undelete) по userId, если был удалён.
    */
   async restoreTeacher(userId) {
     await prisma.teacher.updateMany({
-      where: { userId },
-      data: { deletedAt: null }
+      where: { userId, deletedAt: { not: null } },
+      data: { deletedAt: null },
     });
     return { success: true };
+  }
+
+  /**
+   * 5) Создать нового преподавателя или восстановить soft-deleted запись по userId.
+   *    Используется при смене роли пользователя на TEACHER.
+   */
+  async createOrRestore(userId) {
+    const existing = await prisma.teacher.findUnique({
+      where: { userId },
+      select: { id: true, deletedAt: true },
+    });
+
+    if (existing) {
+      if (existing.deletedAt) {
+        // Восстановить soft-deleted
+        await prisma.teacher.update({
+          where: { id: existing.id },
+          data: { deletedAt: null },
+        });
+      }
+      // Если существует и не удалён — ничего не делаем
+      return;
+    }
+
+    // Если не существует — создаём новую запись
+    await prisma.teacher.create({
+      data: { user: { connect: { id: userId } } },
+    });
   }
 }
 
