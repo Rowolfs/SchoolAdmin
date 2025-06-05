@@ -14,6 +14,16 @@ class PupilService {
    * Получить всех активных учеников.
    * Возвращаем Pupil вместе с информацией о User (ФИО, email, роль).
    */
+
+  // backend/services/PupilService.ts
+  async createPupil(userId: number) {
+    return prisma.pupil.create({
+      data: {
+        user:  { connect: { id: userId } },
+      }
+    });
+  }
+
   async getAllPupils() {
     const pupils = await prisma.pupil.findMany({
       where: { deletedAt: null },

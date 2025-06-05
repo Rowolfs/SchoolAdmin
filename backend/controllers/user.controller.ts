@@ -47,9 +47,14 @@ async function getUsers(req, res, next) {
 async function searchUsers(req, res, next) {
   try {
     const excludeId = Number(req.user.id);
-    const q = String(req.query.q || '');
+    const q = String(req.query.q || '').trim(); // убираем пробелы по краям
+
+    if (!q) {
+      return res.status(400).json({ message: 'Параметр "q" обязателен и не может быть пустым' });
+    }
+
     const users = await UserService.searchUsersByName(q, excludeId);
-    res.json(users);
+    return res.json(users);
   } catch (err) {
     next(err);
   }
@@ -84,8 +89,7 @@ async function filterUsers(req, res, next) {
 async function changeUserRoleHandler(req, res, next) {
   try {
     const userId = Number(req.params.id);
-    const { role: newRole } = req.body;
-    const updated = await UserService.changeUserRole(userId, newRole);
+    const updated = await UserService.updateUser(userId, req.body);
     res.json(updated);
   } catch (err) {
     next(err);

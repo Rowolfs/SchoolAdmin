@@ -21,11 +21,12 @@ router.use((req, res, next) => {
   if (req.user.role !== 'ADMIN') return res.sendStatus(403);
   next();
 });
-
-router.get('/', getUsers);
 router.get('/search', searchUsers);
 router.patch('/:id/role', changeUserRoleHandler);
 router.patch('/:id', updateUserHandler);
 router.delete('/:id', deleteUserHandler);
+
+
+router.get('/', getUsers);
 
 module.exports = router;

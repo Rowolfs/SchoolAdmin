@@ -38,9 +38,8 @@ class UserService {
     });
 
     if (role.name === 'STUDENT') {
-      await prisma.pupil.create({
-        data: { user: { connect: { id: user.id } }, classId: null },
-      });
+      await PupilService.createPupil(user.id);
+
     }
 
     return {
