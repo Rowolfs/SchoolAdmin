@@ -2,14 +2,41 @@
 const PrismaSingleton = require('../prisma/client');
 const prisma = PrismaSingleton.getInstance();
 
+interface ClassWithConditionalTeacher {
+  id: number;
+  name: string;
+  pupils: {
+    id: number;
+    deletedAt: Date;
+    user: {
+      name: string;
+      surname: string;
+      patronymic: string;
+    };
+  }
+  teacher: {
+    id: number;
+    deletedAt: Date;
+    user: {
+      name: string;
+      surname: string;
+      patronymic: string;
+    };
+  } | null;
+  // Add other class fields as needed
+}
+
 class ClassService {
   static async getAllClasses() {
-    return prisma.class.findMany({
-      where: { deletedAt: null },
+    let raw = await prisma.class.findMany({
+      where: { 
+        deletedAt: null,
+      },
       include: {
         teacher: {
           select: {
             id: true,
+            deletedAt: true,
             user: {
               select: { name: true, surname: true, patronymic: true },
             },
@@ -18,6 +45,7 @@ class ClassService {
         pupils: {
           select: {
             id: true,
+            deletedAt: true,
             user: {
               select: { name: true, surname: true, patronymic: true },
             },
@@ -26,6 +54,33 @@ class ClassService {
       },
       orderBy: { id: 'asc' },
     });
+
+    const result: ClassWithConditionalTeacher[] = raw.map((c) => {
+      // Process teacher
+      let teacher = null;
+      if (c.teacher && c.teacher.deletedAt === null) {
+      const { deletedAt, ...t } = c.teacher;
+      teacher = t;
+      }
+
+      // Process pupils
+      const pupils = (c.pupils || [])
+      .filter((p) => p.deletedAt === undefined || p.deletedAt === null)
+      .map((p) => {
+        const { deletedAt, ...rest } = p;
+        return rest;
+      });
+
+      return {
+      id: c.id,
+      name: c.name,
+      pupils,
+      teacher,
+      };
+    });
+
+    return result;
+
   }
 
   static async getClassById(id) {

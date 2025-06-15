@@ -37,11 +37,5 @@ export const StudentAPI = {
    */
   getByClass: (classId: number): Promise<Student[]> =>
     apiClient.get<Student[]>(`/students/class/${classId}`).then((res) => res.data),
-
-  /**
-   * После галочек отправляем список pupil.id, чтобы бэкенд обновил classId.
-   * POST /api/classes/:classId/students  body: { studentIds: number[] }
-   */
-  assignToClass: (classId: number, studentIds: number[]): Promise<void> =>
-    apiClient.post<void>(`/classes/${classId}/students`, { studentIds }).then(() => {}),
+  
 };

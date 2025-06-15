@@ -54,13 +54,13 @@ export const ClassAPI = {
   /**
    * POST /api/classes/:id/students
    */
-  assignStudents: (classId: number, studentIds: number[]): Promise<
+  assignStudents: (classId: number, pupilIds: number[]): Promise<
     { id: number; user: { name: string; surname: string; patronymic: string } }[]
   > => {
     return apiClient
       .post<{ id: number; user: { name: string; surname: string; patronymic: string } }[]>(
         `/classes/${classId}/students`,
-        { studentIds }
+        { pupilIds }
       )
       .then((res) => res.data);
   },

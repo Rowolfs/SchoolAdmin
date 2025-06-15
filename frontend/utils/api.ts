@@ -84,20 +84,3 @@ export const StudentAPI = {
 //  API для классов
 // =========================
 
-export const ClassAPI = {
-  // Получить все классы
-  getAll: () => api.get<Class[]>('/classes').then((res) => res.data),
-
-  // Создать класс
-  create: (data: { name: string; classTeacher?: number }) =>
-    api.post<Class>('/classes', data).then((res) => res.data),
-
-  // Удалить класс (soft-delete)
-  remove: (id: number) => api.delete<void>(`/classes/${id}`),
-
-  // Назначить / перезаписать список студентов в классе
-  assignStudents: (id: number, studentIds: number[]) =>
-    api
-      .post<Student[]>(`/classes/${id}/students`, { studentIds })
-      .then((res) => res.data),
-};

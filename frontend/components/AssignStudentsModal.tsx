@@ -57,7 +57,7 @@ export default function AssignStudentsModal({
   // 7) По нажатию «Сохранить» вызываем мутацию
   const handleSave = () => {
     assignMutation.mutate(
-      { classId, studentIds: checkedIds },
+      { classId, pupilsIds: checkedIds },
       {
         onSuccess: () => {
           onClose();
