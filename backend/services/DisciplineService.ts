@@ -11,7 +11,7 @@ class DisciplineService {
       where: { deletedAt: null },
       include: {
         disciplineTeachers: {
-          where: { deletedAt: null },
+          where: { deletedAt: null,},
           include: {
             teacher: {
               include: {
@@ -92,7 +92,7 @@ class DisciplineService {
   /**
    * Назначить преподавателей на дисциплину (полная перезапись).
    */
-  static async assignTeachersToDiscipline(disciplineId, teacherIds) {
+  static async assignTeachers(disciplineId, teacherIds) {
     // 1. Проверка дисциплины
     const existingDisc = await prisma.discipline.findUnique({
       where: { id: disciplineId },

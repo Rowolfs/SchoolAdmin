@@ -1,85 +1,53 @@
-// backend/controllers/discipline.controller.ts
+// backend/controllers/discipline.controller.js
 const DisciplineService = require('../services/DisciplineService');
+const TeacherService = require('../services/TeacherService');
 
-class DisciplineController {
+module.exports = {
   // GET /api/disciplines
-  static async getAll(req, res) {
-    try {
-      const disciplines = await DisciplineService.getAllDisciplines();
-      return res.status(200).json(disciplines);
-    } catch (error) {
-      console.error('DisciplineController.getAll error:', error);
-      return res.status(500).json({ message: 'Ошибка загрузки дисциплин' });
-    }
-  }
+  async getAll(req, res) {
+    const list = await DisciplineService.getAllDisciplines();
+    res.json(list);
+  },
 
   // POST /api/disciplines
-  static async create(req, res) {
-    try {
-      const { name, description } = req.body;
-      if (!name || typeof name !== 'string') {
-        return res.status(400).json({ message: 'Поле name обязательно и должно быть строкой' });
-      }
-      const newDisc = await DisciplineService.createDiscipline({ name: name.trim(), description });
-      return res.status(201).json({
-        id: newDisc.id,
-        name: newDisc.name,
-        description: newDisc.description,
-      });
-    } catch (error) {
-      console.error('DisciplineController.create error:', error);
-      return res.status(500).json({ message: 'Ошибка при создании дисциплины' });
-    }
-  }
+  async create(req, res) {
+    const created = await DisciplineService.create(req.body);
+    res.status(201).json(created);
+  },
 
   // DELETE /api/disciplines/:id
-  static async remove(req, res) {
-    try {
-      const disciplineId = Number(req.params.id);
-      if (Number.isNaN(disciplineId)) {
-        return res.status(400).json({ message: 'Неправильный ID дисциплины' });
-      }
-      await DisciplineService.deleteDiscipline(disciplineId);
-      return res.sendStatus(204);
-    } catch (error) {
-      console.error('DisciplineController.remove error:', error);
-      return res.status(500).json({ message: 'Ошибка при удалении дисциплины' });
-    }
-  }
+  async remove(req, res) {
+    const id = Number(req.params.id);
+    await DisciplineService.remove(id);
+    res.sendStatus(204);
+  },
 
   // GET /api/disciplines/:id/teachers
-  static async getTeachers(req, res) {
-    try {
-      const disciplineId = Number(req.params.id);
-      if (Number.isNaN(disciplineId)) {
-        return res.status(400).json({ message: 'Неправильный ID дисциплины' });
-      }
-      const teachers = await DisciplineService.getTeachersByDiscipline(disciplineId);
-      return res.status(200).json(teachers);
-    } catch (error) {
-      console.error('DisciplineController.getTeachers error:', error);
-      return res.status(500).json({ message: 'Ошибка загрузки преподавателей для дисциплины' });
-    }
-  }
+  async getTeachers(req, res) {
+    const id = Number(req.params.id);
+    const teachers = await TeacherService.getByDiscipline(id);
+    res.json(teachers);
+  },
+
+  // GET /api/disciplines/:id/teachers/search
+  async searchTeachersByDiscipline(req, res) {
+    const disciplineId = Number(req.params.id);
+    const search = String(req.query.search || '');
+    // все подходящие по ФИО
+    const all = await TeacherService.searchAllTeachers(search);
+    // уже назначенные
+    const assigned = await TeacherService.getByDiscipline(disciplineId);
+    const assignedIds = new Set(assigned.map(t => t.id));
+    // помечаем
+    const result = all.map(t => ({ ...t, assigned: assignedIds.has(t.id) }));
+    res.json(result);
+  },
 
   // PUT /api/disciplines/:id/teachers
-  static async assignTeachers(req, res) {
-    try {
-      const disciplineId = Number(req.params.id);
-      if (Number.isNaN(disciplineId)) {
-        return res.status(400).json({ message: 'Неправильный ID дисциплины' });
-      }
-      const { teacherIds } = req.body;
-      if (!Array.isArray(teacherIds) || teacherIds.some(id => typeof id !== 'number')) {
-        return res.status(400).json({ message: 'teacherIds должен быть массивом чисел' });
-      }
-      await DisciplineService.assignTeachersToDiscipline(disciplineId, teacherIds);
-      return res.sendStatus(204);
-    } catch (error) {
-      console.error('DisciplineController.assignTeachers error:', error);
-      return res.status(500).json({ message: 'Ошибка при назначении преподавателей' });
-    }
-  }
-}
-
-module.exports = DisciplineController;
+  async assignTeachers(req, res) {
+    const disciplineId = Number(req.params.id);
+    const { teacherIds } = req.body;
+    await DisciplineService.assignTeachers(disciplineId, teacherIds);
+    res.sendStatus(204);
+  },
+};

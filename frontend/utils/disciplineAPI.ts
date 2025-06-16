@@ -1,12 +1,10 @@
 // frontend/utils/disciplineApi.ts
-
 import api from './apiClient';
 
 export interface Discipline {
   id: number;
   name: string;
   description: string;
-  teachers: Teacher[];
 }
 
 export interface Teacher {
@@ -16,11 +14,15 @@ export interface Teacher {
     name: string;
     surname: string;
     patronymic: string;
+    email?: string;
+    role?: string;
   };
+  classroomNumber?: string;
+  assigned?: boolean;
 }
 
 /**
- * Получить список всех дисциплин (с назначенными преподавателями)
+ * Получить список всех дисциплин
  */
 export async function getDisciplines(): Promise<Discipline[]> {
   const res = await api.get<Discipline[]>('/disciplines');
@@ -46,36 +48,37 @@ export async function deleteDiscipline(id: number): Promise<void> {
 }
 
 /**
- * Получить список преподавателей, назначенных на конкретную дисциплину
+ * Получить преподавателей по дисциплине
  */
 export async function getTeachersByDiscipline(
   disciplineId: number
 ): Promise<Teacher[]> {
-  const res = await api.get<Teacher[]>(`/disciplines/${disciplineId}/teachers`);
+  const res = await api.get<Teacher[]>(
+    `/disciplines/${disciplineId}/teachers`
+  );
   return res.data;
 }
 
 /**
- * Поиск преподавателей с учётом фильтра по ФИО и пометки уже назначенных
+ * Поиск преподавателей по дисциплине
  */
-export async function searchTeachers(
-  searchStr: string,
+export async function searchTeachersByDiscipline(
+  search: string,
   disciplineId: number
 ): Promise<Teacher[]> {
-  const params: Record<string, string> = {};
-  if (searchStr) params.search = searchStr;
-  params.disciplineId = String(disciplineId);
-  const res = await api.get<Teacher[]>('/teachers', { params });
+  const res = await api.get<Teacher[]>(
+    `/disciplines/${disciplineId}/teachers/search`,
+    { params: { search } }
+  );
   return res.data;
 }
 
 /**
- * Назначить список преподавателей на дисциплину
+ * Назначить преподавателей на дисциплину
  */
-export async function assignTeachers(params: {
-  disciplineId: number;
-  teacherIds: number[];
-}): Promise<void> {
-  const { disciplineId, teacherIds } = params;
+export async function assignTeachers(
+  disciplineId: number,
+  teacherIds: number[]
+): Promise<void> {
   await api.put(`/disciplines/${disciplineId}/teachers`, { teacherIds });
 }

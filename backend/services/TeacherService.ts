@@ -5,13 +5,13 @@ const prisma = PrismaSingleton.getInstance();
 class TeacherService {
   /**
    * 1) Получить всех активных преподавателей.
-   *    Возвращаем id, ФИО (из связанного User), email и classroomNumber.
    */
   async getAllTeachers() {
     const teachers = await prisma.teacher.findMany({
       where: { deletedAt: null },
       select: {
         id: true,
+        classroomNumber: true,
         user: {
           select: {
             id: true,
@@ -22,14 +22,13 @@ class TeacherService {
             role: { select: { name: true } },
           },
         },
-        classroomNumber: true,
-        createdAt: true,
       },
       orderBy: { id: 'asc' },
     });
 
-    return teachers.map((t) => ({
+    return teachers.map(t => ({
       id: t.id,
+      classroomNumber: t.classroomNumber,
       user: {
         id: t.user.id,
         name: t.user.name,
@@ -38,74 +37,155 @@ class TeacherService {
         email: t.user.email,
         role: t.user.role.name,
       },
-      classroomNumber: t.classroomNumber,
-      createdAt: t.createdAt,
     }));
   }
 
   /**
-   * 2) Получить одного преподавателя по его userId.
+   * 2) Получить преподавателя по userId.
    */
   async getByUserId(userId) {
-    const teacher = await prisma.teacher.findFirst({
+    const t = await prisma.teacher.findFirst({
       where: { userId, deletedAt: null },
       select: {
         id: true,
         classroomNumber: true,
-        createdAt: true,
+        user: { select: { id: true } },
       },
     });
-    return teacher || null;
+    return t
+      ? { id: t.id, classroomNumber: t.classroomNumber, userId: t.user.id }
+      : null;
   }
 
   /**
-   * 3) Soft-delete преподавателя по его userId.
+   * 3) Soft-delete преподавателя по userId.
    */
   async deleteTeacher(userId) {
     await prisma.teacher.updateMany({
       where: { userId, deletedAt: null },
       data: { deletedAt: new Date() },
     });
-    return { success: true };
   }
 
   /**
-   * 4) Восстановить преподавателя (soft-undelete) по userId, если был удалён.
+   * 4) Восстановить преподавателя (soft-undelete) по userId.
    */
   async restoreTeacher(userId) {
     await prisma.teacher.updateMany({
       where: { userId, deletedAt: { not: null } },
       data: { deletedAt: null },
     });
-    return { success: true };
   }
 
   /**
-   * 5) Создать нового преподавателя или восстановить soft-deleted запись по userId.
-   *    Используется при смене роли пользователя на TEACHER.
+   * 5) Создать или восстановить преподавателя по userId.
    */
   async createOrRestore(userId) {
     const existing = await prisma.teacher.findUnique({
       where: { userId },
       select: { id: true, deletedAt: true },
     });
-
     if (existing) {
       if (existing.deletedAt) {
-        // Восстановить soft-deleted
         await prisma.teacher.update({
           where: { id: existing.id },
           data: { deletedAt: null },
         });
       }
-      // Если существует и не удалён — ничего не делаем
       return;
     }
+    await prisma.teacher.create({ data: { user: { connect: { id: userId } } } });
+  }
 
-    // Если не существует — создаём новую запись
-    await prisma.teacher.create({
-      data: { user: { connect: { id: userId } } },
+  /**
+   * 6) Получить всех преподавателей, назначенных на дисциплину.
+   */
+  async getByDiscipline(disciplineId: number) {
+    const teachers = await prisma.teacher.findMany({
+      where: {
+        deletedAt: null,
+        disciplines: {
+          some: {
+            deletedAt: null,
+            disciplineId: disciplineId,
+          },
+        },
+      },
+      select: {
+        id: true,
+        classroomNumber: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            surname: true,
+            patronymic: true,
+            email: true,
+            role: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { id: 'asc' },
     });
+
+    return teachers.map(t => ({
+      id: t.id,
+      classroomNumber: t.classroomNumber,
+      user: {
+        id: t.user.id,
+        name: t.user.name,
+        surname: t.user.surname,
+        patronymic: t.user.patronymic,
+        email: t.user.email,
+        role: t.user.role.name,
+      },
+    }));
+  }
+
+  /**
+   * 7) Поиск всех преподавателей по ФИО (без учёта дисциплины).
+   */
+  async searchAllTeachers(searchStr: string) {
+    const where: any = { deletedAt: null };
+    if (searchStr) {
+      where.OR = [
+        { user: { name: { contains: searchStr, mode: 'insensitive' } } },
+        { user: { surname: { contains: searchStr, mode: 'insensitive' } } },
+        { user: { patronymic: { contains: searchStr, mode: 'insensitive' } } },
+      ];
+    }
+
+    const teachers = await prisma.teacher.findMany({
+      where,
+      select: {
+        id: true,
+        classroomNumber: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            surname: true,
+            patronymic: true,
+            email: true,
+            role: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { id: 'asc' },
+    });
+
+    return teachers.map(t => ({
+      id: t.id,
+      classroomNumber: t.classroomNumber,
+      user: {
+        id: t.user.id,
+        name: t.user.name,
+        surname: t.user.surname,
+        patronymic: t.user.patronymic,
+        email: t.user.email,
+        role: t.user.role.name,
+      },
+    }));
   }
 }
 

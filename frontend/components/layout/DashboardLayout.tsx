@@ -15,7 +15,7 @@ const menuConfig: Record<'ADMIN'|'TEACHER'|'STUDENT', MenuItem[]> = {
     { title: 'Панель', path: '/dashboard' },
     { title: 'Пользователи', path: '/dashboard/users' },
     { title: 'Классы', path: '/dashboard/classes' },
-    { title: 'Дисциплинны', path: '/dashboard/classes' },
+    { title: 'Дисциплинны', path: '/dashboard/disciplines' },
 
   ],
   TEACHER: [

@@ -1,11 +1,12 @@
 // backend/controllers/teacher.controller.ts
+import { Request, Response, NextFunction } from 'express';
 const TeacherService = require('../services/TeacherService');
 
 /**
  * GET /api/teachers
  * Возвращает всех активных преподавателей
  */
-async function viewAllTeachers(req, res, next) {
+export async function viewAllTeachers(req: Request, res: Response, next: NextFunction) {
   try {
     const teachers = await TeacherService.getAllTeachers();
     return res.json(teachers);
@@ -19,7 +20,7 @@ async function viewAllTeachers(req, res, next) {
  * GET /api/teachers/user/:userId
  * Получить преподавателя по userId (если нужен)
  */
-async function viewTeacherByUserId(req, res, next) {
+export async function viewTeacherByUserId(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = Number(req.params.userId);
     if (Number.isNaN(userId)) {
@@ -41,7 +42,7 @@ async function viewTeacherByUserId(req, res, next) {
  * DELETE /api/teachers/user/:userId
  * Soft-delete преподавателя
  */
-async function deleteTeacher(req, res, next) {
+export async function deleteTeacher(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = Number(req.params.userId);
     if (Number.isNaN(userId)) {
@@ -60,7 +61,7 @@ async function deleteTeacher(req, res, next) {
  * PATCH /api/teachers/user/:userId/restore
  * Восстановить преподавателя
  */
-async function restoreTeacher(req, res, next) {
+export async function restoreTeacher(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = Number(req.params.userId);
     if (Number.isNaN(userId)) {
@@ -75,9 +76,48 @@ async function restoreTeacher(req, res, next) {
   }
 }
 
-module.exports = {
-  viewAllTeachers,
-  viewTeacherByUserId,
-  deleteTeacher,
-  restoreTeacher
-};
+/**
+ * GET /api/disciplines/:disciplineId/teachers
+ * Возвращает всех преподавателей, назначенных на дисциплину
+ */
+export async function viewTeachersByDiscipline(req: Request, res: Response, next: NextFunction) {
+  try {
+    const disciplineId = Number(req.params.disciplineId);
+    if (Number.isNaN(disciplineId)) {
+      return res.status(400).json({ error: 'Неверный идентификатор дисциплины' });
+    }
+    const teachers = await TeacherService.getByDiscipline(disciplineId);
+    return res.json(teachers);
+  } catch (error) {
+    console.error('Error in viewTeachersByDiscipline:', error);
+    return res.status(500).json({ error: 'Ошибка получения преподавателей по дисциплине' });
+  }
+}
+
+/**
+ * GET /api/disciplines/:disciplineId/teachers/search
+ * Поиск преподавателей по ФИО с отметкой уже назначенных на дисциплину
+ */
+export async function searchTeachersByDiscipline(req: Request, res: Response, next: NextFunction) {
+  try {
+    const disciplineId = Number(req.params.id);
+    if (Number.isNaN(disciplineId)) {
+      return res.status(400).json({ error: 'Неверный идентификатор дисциплины' });
+    }
+    const search = String(req.query.search || '');
+    // все преподаватели по ФИО
+    const all = await TeacherService.searchAllTeachers(search);
+    // уже назначенные
+    const assigned = await TeacherService.getByDiscipline(disciplineId);
+    const assignedIds = new Set(assigned.map((t: any) => t.id));
+    // помечаем
+    const result = all.map((t: any) => ({
+      ...t,
+      assigned: assignedIds.has(t.id),
+    }));
+    return res.json(result);
+  } catch (error) {
+    console.error('Error in searchTeachersByDiscipline:', error);
+    return res.status(500).json({ error: 'Ошибка поиска преподавателей по дисциплине' });
+  }
+}
