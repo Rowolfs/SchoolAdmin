@@ -1,17 +1,17 @@
 // backend/services/DisciplineService.ts
+
 const PrismaSingleton = require('../prisma/client');
 const prisma = PrismaSingleton.getInstance();
 
 class DisciplineService {
   /**
-   * Получить все дисциплины (неудалённые) с назначенными преподавателями.
+   * Получить все дисциплины (неудалённые) с активными преподавателями.
    */
-  static async getAllDisciplines() {
+   static async getAllDisciplines() {
     const disciplines = await prisma.discipline.findMany({
       where: { deletedAt: null },
       include: {
         disciplineTeachers: {
-          where: { deletedAt: null,},
           include: {
             teacher: {
               include: {
@@ -30,35 +30,20 @@ class DisciplineService {
       id: disc.id,
       name: disc.name,
       description: disc.description,
-      teachers: disc.disciplineTeachers.map((dt) => ({
-        id: dt.teacher.id,
-        user: dt.teacher.user,
-      })),
+      teachers: disc.disciplineTeachers
+        // Фильтрация по не удалённым связям и только по живым учителям
+        .filter(dt => dt.deletedAt === null && dt.teacher && dt.teacher.deletedAt === null)
+        .map(dt => ({
+          id: dt.teacher.id,
+          user: dt.teacher.user,
+        })),
     }));
-  }
-
-  /**
-   * Создать новую дисциплину.
-   */
-  static async create(data) {
-    const newDisc = await prisma.discipline.create({
-      data: {
-        name: data.name,
-        description: data.description,
-      },
-    });
-    return {
-      id: newDisc.id,
-      name: newDisc.name,
-      description: newDisc.description,
-    };
   }
 
   /**
    * Получить преподавателей по дисциплине.
    */
   static async getTeachersByDiscipline(disciplineId) {
-    // Проверяем, что дисциплина существует и не удалена
     const existingDisc = await prisma.discipline.findUnique({
       where: { id: disciplineId },
       select: { id: true, deletedAt: true },
@@ -83,17 +68,35 @@ class DisciplineService {
       },
     });
 
-    return entries.map((entry) => ({
-      id: entry.teacher.id,
-      user: entry.teacher.user,
-    }));
+    return entries
+      .filter(entry => entry.teacher && entry.teacher.deletedAt == null)
+      .map(entry => ({
+        id: entry.teacher.id,
+        user: entry.teacher.user,
+      }));
+  }
+
+  /**
+   * Создать новую дисциплину.
+   */
+  static async create(data) {
+    const newDisc = await prisma.discipline.create({
+      data: {
+        name: data.name,
+        description: data.description,
+      },
+    });
+    return {
+      id: newDisc.id,
+      name: newDisc.name,
+      description: newDisc.description,
+    };
   }
 
   /**
    * Назначить преподавателей на дисциплину (полная перезапись).
    */
   static async assignTeachers(disciplineId, teacherIds) {
-    // 1. Проверка дисциплины
     const existingDisc = await prisma.discipline.findUnique({
       where: { id: disciplineId },
       select: { id: true, deletedAt: true },
@@ -102,20 +105,16 @@ class DisciplineService {
       throw new Error(`Дисциплина с id=${disciplineId} не найдена или удалена`);
     }
 
-    // 2. Soft-delete всех текущих связей disciplineTeacher
     await prisma.disciplineTeacher.updateMany({
       where: { disciplineId, deletedAt: null },
       data: { deletedAt: new Date() },
     });
 
-    // 3. Если нет учителей — выходим
     if (!Array.isArray(teacherIds) || teacherIds.length === 0) {
       return;
     }
 
-    // 4. Обрабатываем каждый teacherId
     for (const teacherId of teacherIds) {
-      // Проверяем существование и активность учителя
       const existingTeacher = await prisma.teacher.findUnique({
         where: { id: teacherId },
         select: { id: true, deletedAt: true },
@@ -124,7 +123,6 @@ class DisciplineService {
         throw new Error(`Учитель с id=${teacherId} не найден или удалён`);
       }
 
-      // Пытаемся найти уже существующую (возможно soft-deleted) ссылку
       const existingLink = await prisma.disciplineTeacher.findUnique({
         where: { disciplineId_teacherId: { disciplineId, teacherId } },
         select: { id: true, deletedAt: true },
@@ -132,15 +130,12 @@ class DisciplineService {
 
       if (existingLink) {
         if (existingLink.deletedAt) {
-          // Восстанавливаем soft-deleted связь
           await prisma.disciplineTeacher.update({
             where: { id: existingLink.id },
             data: { deletedAt: null },
           });
         }
-        // Иначе связь уже активна — ничего не делаем
       } else {
-        // Создаём новую связь
         await prisma.disciplineTeacher.create({
           data: { disciplineId, teacherId },
         });
