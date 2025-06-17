@@ -4,12 +4,12 @@ import { NextPage, GetServerSideProps } from 'next';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable from '../../components/DataTable';
 import { ColumnDef } from '@tanstack/react-table';
-import { Class } from '../../utils/classAPI';
-import { useQueryClient } from '@tanstack/react-query';
+import { Class as ClassType } from '../../utils/classAPI';
 import { useClasses, useCreateClass, useDeleteClass } from '../../hooks/useClasses';
 import { useStudentsByClass } from '../../hooks/useStudentsByClass';
 import AssignStudentsModal from '../../components/AssignStudentsModal';
 import AssignTeacherModal from '../../components/AssignTeacherModal';
+import AssignDisciplineTeachersModal from '../../components/AssignDisciplineTeachersModal';
 import { verifyTokenOnServer, UserPayload } from '../../utils/authAPI';
 
 interface ClassesPageProps {
@@ -18,7 +18,6 @@ interface ClassesPageProps {
 
 const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
   const { data: classes = [], isLoading, isError } = useClasses();
-  const queryClient = useQueryClient();
   const createMutation = useCreateClass();
   const deleteMutation = useDeleteClass();
 
@@ -36,21 +35,22 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
   const [isAssignTeacherOpen, setIsAssignTeacherOpen] = useState(false);
   const [activeClassIdForTeacher, setActiveClassIdForTeacher] = useState<number | null>(null);
 
-  // Колонки таблицы
-  const columns = useMemo<ColumnDef<Class>[]>(() => [
+  // state для AssignDisciplineTeachersModal
+  const [isAssignPairsOpen, setIsAssignPairsOpen] = useState(false);
+  const [activeClassIdForPairs, setActiveClassIdForPairs] = useState<number | null>(null);
+
+  // Определяем колонки таблицы
+  const columns = useMemo<ColumnDef<ClassType>[]>(() => [
     { header: 'ID', accessorKey: 'id' },
     { header: 'Название', accessorKey: 'name' },
     {
-      header: 'Учитель',
+      header: 'Классный руководитель',
       accessorKey: 'teacher',
       cell: ({ row }) => {
         const cls = row.original;
         if (cls.teacher) {
-          return (
-            <span>
-              {cls.teacher.user.surname} {cls.teacher.user.name} {cls.teacher.user.patronymic}
-            </span>
-          );
+          const { surname, name, patronymic } = cls.teacher.user;
+          return <span>{`${surname} ${name} ${patronymic}`}</span>;
         }
         return <span className="italic text-gray-500">—</span>;
       },
@@ -86,6 +86,15 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
               Назначить преподавателя
             </button>
             <button
+              className="text-green-600 hover:underline"
+              onClick={() => {
+                setActiveClassIdForPairs(cls.id);
+                setIsAssignPairsOpen(true);
+              }}
+            >
+              Назначить пары
+            </button>
+            <button
               className="text-red-600 hover:underline"
               onClick={() => deleteMutation.mutate(cls.id)}
             >
@@ -97,7 +106,7 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
     },
   ], [deleteMutation]);
 
-  // Функции открытия/закрытия модалок и создания класса
+  // Открытие/закрытие и создание класса
   const openCreateModal = () => {
     setNewClassName('');
     setNewClassTeacherId('');
@@ -112,23 +121,15 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
         classTeacher: newClassTeacherId === '' ? undefined : newClassTeacherId,
       },
       {
-        onSuccess: () => {
-          closeCreateModal();
-          setNewClassName('');
-          setNewClassTeacherId('');
-        },
+        onSuccess: closeCreateModal,
       }
     );
   };
 
-  const closeAssignStudentsModal = () => {
-    setActiveClassIdForStudents(null);
-    setIsAssignStudentsOpen(false);
-  };
-  const closeAssignTeacherModal = () => {
-    setActiveClassIdForTeacher(null);
-    setIsAssignTeacherOpen(false);
-  };
+  // Закрытие модалок
+  const closeAssignStudentsModal = () => { setActiveClassIdForStudents(null); setIsAssignStudentsOpen(false); };
+  const closeAssignTeacherModal  = () => { setActiveClassIdForTeacher(null);   setIsAssignTeacherOpen(false);   };
+  const closeAssignPairsModal    = () => { setActiveClassIdForPairs(null);     setIsAssignPairsOpen(false);     };
 
   if (isError) {
     return (
@@ -173,29 +174,23 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
                 type="text"
                 placeholder="Название класса"
                 value={newClassName}
-                onChange={(e) => setNewClassName(e.target.value)}
+                onChange={e => setNewClassName(e.target.value)}
                 className="w-full border px-3 py-2 mb-3 rounded"
               />
               <input
                 type="number"
                 placeholder="ID учителя (опционально)"
                 value={newClassTeacherId}
-                onChange={(e) =>
+                onChange={e =>
                   setNewClassTeacherId(e.target.value === '' ? '' : Number(e.target.value))
                 }
                 className="w-full border px-3 py-2 mb-4 rounded"
               />
               <div className="flex justify-end space-x-2">
-                <button
-                  className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                  onClick={closeCreateModal}
-                >
+                <button className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400" onClick={closeCreateModal}>
                   Отмена
                 </button>
-                <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                  onClick={handleCreateClass}
-                >
+                <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={handleCreateClass}>
                   Создать
                 </button>
               </div>
@@ -203,7 +198,7 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
           </div>
         )}
 
-        {/* Модалка назначения учеников */}
+        {/* Модалки назначения */}
         {isAssignStudentsOpen && activeClassIdForStudents !== null && (
           <AssignStudentsModal
             isOpen={isAssignStudentsOpen}
@@ -212,16 +207,19 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
             existingUserIds={pupilsOfActiveClass.map(p => p.id)}
           />
         )}
-
-        {/* Модалка назначения преподавателя */}
         {isAssignTeacherOpen && activeClassIdForTeacher !== null && (
           <AssignTeacherModal
             isOpen={isAssignTeacherOpen}
             onClose={closeAssignTeacherModal}
             classId={activeClassIdForTeacher}
-            existingTeacherId={
-              classes.find(c => c.id === activeClassIdForTeacher)?.classTeacher ?? null
-            }
+            existingTeacherId={classes.find(c => c.id === activeClassIdForTeacher)?.classTeacher ?? null}
+          />
+        )}
+        {isAssignPairsOpen && activeClassIdForPairs !== null && (
+          <AssignDisciplineTeachersModal
+            isOpen={isAssignPairsOpen}
+            onClose={closeAssignPairsModal}
+            classId={activeClassIdForPairs}
           />
         )}
       </div>
@@ -232,18 +230,12 @@ const ClassesPage: NextPage<ClassesPageProps> = ({ user }) => {
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const user: UserPayload | null = await verifyTokenOnServer(ctx);
   if (!user) {
-    return {
-      redirect: { destination: '/auth/login', permanent: false },
-    };
+    return { redirect: { destination: '/auth/login', permanent: false } };
   }
   if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
-    return {
-      redirect: { destination: '/dashboard', permanent: false },
-    };
+    return { redirect: { destination: '/dashboard', permanent: false } };
   }
-  return {
-    props: { user },
-  };
+  return { props: { user } };
 };
 
 export default ClassesPage;

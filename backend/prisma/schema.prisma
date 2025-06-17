@@ -59,8 +59,6 @@ model Teacher {
   // Связь «какой учитель ведет какие дисциплины»
   disciplines           DisciplineTeacher[]
 
-  // Записи «учитель–дисциплина–класс–ученик/оценка»
-  journalEntries        DisciplineTeacherPupilsMark[]  @relation("TeacherJournalEntries")
 
   // Если этот учитель – классный руководитель
   classTaught           Class[]                         @relation("ClassTeacher")
@@ -114,36 +112,35 @@ model Pupil {
 ///
 /// Универсальная модель журнала для связей «дисциплина–учитель–класс–ученик–оценка»
 ///
+
+
+
+///
+/// Модель DisciplineTeacherPupilsMark: универсальная модель журнала для связей «дисциплина–учитель–класс–ученик–оценка»
+///
 model DisciplineTeacherPupilsMark {
   id                   Int                  @id @default(autoincrement())
-
   disciplineTeacherId  Int
-  classId              Int?
+  classId              Int
   pupilId              Int?
-  mark                 Float?               // если null — это «привязка», иначе это оценка
-  quarter              Int?                 // от 1 до 4 (используется только для оценок)
-
-  // Связи на уровне «учитель–дисциплина»
-  disciplineTeacher    DisciplineTeacher    @relation("DisciplineTeacherJournalEntries", fields: [disciplineTeacherId], references: [id], onDelete: Cascade)
-
-  // Дополнительные поля для удобного доступа к «дисциплине» и «учителю» напрямую
-  disciplineId         Int?                 
-  teacherId            Int?                 
-
-  discipline           Discipline?          @relation("DisciplineJournalEntries", fields: [disciplineId], references: [id])
-  teacher              Teacher?             @relation("TeacherJournalEntries", fields: [teacherId], references: [id])
-
-  // Связь с классом (классная привязка) и учеником (ученическая привязка)
-  class                Class?               @relation("ClassJournalEntries", fields: [classId], references: [id], onDelete: Cascade)
-  pupil                Pupil?               @relation("PupilJournalEntries", fields: [pupilId], references: [id], onDelete: Cascade)
+  mark                 Float?               // 1–10, nullable
+  quarter              Int?                 // 1–4, nullable
 
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
+  deletedAt            DateTime?            // 👈 soft delete
 
-  @@index([classId, disciplineTeacherId])
-  @@index([pupilId, disciplineTeacherId])
-  @@index([disciplineTeacherId])
+  disciplineTeacher    DisciplineTeacher    @relation("DisciplineTeacherJournalEntries", fields: [disciplineTeacherId], references: [id], onDelete: Cascade)
+  class                Class                @relation("ClassJournalEntries", fields: [classId], references: [id], onDelete: Cascade)
+  pupil                Pupil?               @relation("PupilJournalEntries", fields: [pupilId], references: [id], onDelete: SetNull)
+
+  // Opposite relation for Discipline.journalEntries
+  discipline           Discipline           @relation("DisciplineJournalEntries", fields: [disciplineTeacherId], references: [id], map: "DisciplineTeacherPupilsMark_disciplineTeacherId_discipline_fkey")
+
+  @@unique([disciplineTeacherId, classId, pupilId, quarter], name: "uniq_dtp_pupil_quarter")
 }
+
+
 
 ///
 /// Модель User: учетная запись (без изменений, с метаданными)

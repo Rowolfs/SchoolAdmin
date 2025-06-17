@@ -176,88 +176,156 @@ class ClassService {
       },
     });
   }
+  static async getDisciplineTeacherPairs(classId: number) {
+    const all = await prisma.disciplineTeacher.findMany({
+      where: {
+        deletedAt: null,
+        discipline: { deletedAt: null },
+        teacher: { deletedAt: null },
+      },
+      include: {
+        discipline: { select: { id: true, name: true } },
+        teacher: {
+          select: {
+            id: true,
+            deletedAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                surname: true,
+                patronymic: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const assigned = await prisma.disciplineTeacherPupilsMark.findMany({
+      where: { classId, deletedAt: null, mark: null },
+      select: { disciplineTeacherId: true },
+    });
+
+    const assignedIds = new Set(assigned.map((r: { disciplineTeacherId: number }) => r.disciplineTeacherId));
+
+    return all.map((pair: any) => {
+      // Exclude deletedAt from teacher in the result
+      const { deletedAt, ...teacherWithoutDeletedAt } = pair.teacher || {};
+      return {
+        id: pair.id,
+        discipline: pair.discipline,
+        teacher: teacherWithoutDeletedAt,
+        assigned: assignedIds.has(pair.id),
+      };
+    });
+  }
+
+  static async searchDisciplineTeacherPairs(classId: number, search: string) {
+    const where: any = {
+      deletedAt: null,
+      discipline: { deletedAt: null },
+      teacher: { deletedAt: null },
+    };
+
+    if (search) {
+      where.OR = [
+        {
+          discipline: {
+            name: { contains: search, mode: 'insensitive' },
+          },
+        },
+        {
+          teacher: {
+            user: {
+              name: { contains: search, mode: 'insensitive' },
+            },
+          },
+        },
+        {
+          teacher: {
+            user: {
+              surname: { contains: search, mode: 'insensitive' },
+            },
+          },
+        },
+        {
+          teacher: {
+            user: {
+              patronymic: { contains: search, mode: 'insensitive' },
+            },
+          },
+        },
+      ];
+    }
+
+    const all = await prisma.disciplineTeacher.findMany({
+      where,
+      include: {
+        discipline: { select: { id: true, name: true } },
+        teacher: {
+          select: {
+            id: true,
+            deletedAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                surname: true,
+                patronymic: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const assigned = await prisma.disciplineTeacherPupilsMark.findMany({
+      where: { classId, deletedAt: null, mark: null },
+      select: { disciplineTeacherId: true },
+    });
+
+    const assignedIds = new Set(assigned.map((r: { disciplineTeacherId: number }) => r.disciplineTeacherId));
+
+    return all.map((pair: any) => ({
+      id: pair.id,
+      discipline: pair.discipline,
+      teacher: pair.teacher,
+      assigned: assignedIds.has(pair.id),
+    }));
+  }
+
+
 
   /**
-   * Назначить дисциплину классу через связку «учитель-дисциплина».
-   *
-   * @param {number} classId
-   * @param {{ teacherId: number; disciplineId: number }} params
-   * @returns {Promise<{
-   *   class: { id: number; name: string };
-   *   disciplineTeacher: { id: number; teacherId: number; disciplineId: number };
-   * }>}
+   * Назначить пары «дисциплина–учитель» для класса
    */
-  static async assignDisciplineToClass(classId, { teacherId, disciplineId }) {
-    // 1. Проверяем класс
-    const existingClass = await prisma.class.findUnique({
-      where: { id: classId },
-      select: { id: true, deletedAt: true },
-    });
-    if (!existingClass || existingClass.deletedAt) {
-      throw new Error(`Класс с id=${classId} не найден или удалён`);
-    }
 
-    // 2. Проверяем учителя
-    const existingTeacher = await prisma.teacher.findUnique({
-      where: { id: teacherId },
-      select: { id: true, deletedAt: true },
+  static async assignDisciplineTeacherPairs(classId: number, pairs: { id: number }[]) {
+    // Мягкое удаление старых назначений
+    await prisma.disciplineTeacherPupilsMark.updateMany({
+      where: { classId, mark: null, deletedAt: null },
+      data: { deletedAt: new Date() },
     });
-    if (!existingTeacher || existingTeacher.deletedAt) {
-      throw new Error(`Учитель с id=${teacherId} не найден или удалён`);
-    }
 
-    // 3. Проверяем дисциплину
-    const existingDiscipline = await prisma.discipline.findUnique({
-      where: { id: disciplineId },
-      select: { id: true, deletedAt: true },
-    });
-    if (!existingDiscipline || existingDiscipline.deletedAt) {
-      throw new Error(`Дисциплина с id=${disciplineId} не найдена или удалена`);
-    }
+    if (!pairs.length) return;
 
-    // 4. Находим или создаём запись в DisciplineTeacher
-    let discTeacher = await prisma.disciplineTeacher.findUnique({
-      where: { disciplineId_teacherId: { disciplineId, teacherId } },
-      select: { id: true, disciplineId: true, teacherId: true },
-    });
-    if (!discTeacher) {
-      discTeacher = await prisma.disciplineTeacher.create({
-        data: { disciplineId, teacherId },
-        select: { id: true, disciplineId: true, teacherId: true },
-      });
-    } else if (discTeacher.deletedAt) {
-      // Если ранее был soft-delete
-      await prisma.disciplineTeacher.update({
-        where: { id: discTeacher.id },
-        data: { deletedAt: null },
-      });
-      discTeacher = { ...discTeacher };
-    }
+    const dtIds = pairs
+      .map(p => typeof p === 'object' && p !== null && 'id' in p ? p.id : p)
+      .filter(id => typeof id === 'number' && !isNaN(id));
 
-    // 5. Создаём запись в журнале (DisciplineTeacherPupilsMark) для привязки к классу
-    const journalEntry = await prisma.disciplineTeacherPupilsMark.create({
-      data: {
-        disciplineTeacherId: discTeacher.id,
+    if (!dtIds.length) return;
+
+    await prisma.disciplineTeacherPupilsMark.createMany({
+      data: dtIds.map(id => ({
+        disciplineTeacherId: id,
         classId,
-        // teacherId, pupilId, quarter, mark остаются null
-      },
+        mark: null,
+      })),
     });
-
-    // 6. Возвращаем базовую информацию о классе и связке учитель-дисциплина
-    const resultClass = await prisma.class.findUnique({
-      where: { id: classId },
-      select: { id: true, name: true },
-    });
-
-    return {
-      class: resultClass,
-      disciplineTeacher: {
-        id: discTeacher.id,
-        teacherId: discTeacher.teacherId,
-        disciplineId: discTeacher.disciplineId,
-      },
-    };
   }
 }
+
+
 
 module.exports = ClassService;

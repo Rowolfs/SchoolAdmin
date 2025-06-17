@@ -40,7 +40,7 @@ class DisciplineService {
   /**
    * Создать новую дисциплину.
    */
-  static async createDiscipline(data) {
+  static async create(data) {
     const newDisc = await prisma.discipline.create({
       data: {
         name: data.name,
@@ -151,7 +151,7 @@ class DisciplineService {
   /**
    * Soft-delete дисциплины.
    */
-  static async deleteDiscipline(id) {
+  static async remove(id) {
     return prisma.discipline.update({
       where: { id },
       data: { deletedAt: new Date() },

@@ -127,35 +127,37 @@ async function assignStudents(req, res, next) {
   }
 }
 
-/**
- * POST /api/classes/:id/discipline
- * Назначить дисциплину классу через связку учитель-дисциплина
- * Body: { teacherId: number, disciplineId: number }
- */
-async function assignDiscipline(req, res, next) {
+async function viewDisciplineTeacherPairs(req, res, next) {
   try {
     const classId = Number(req.params.id);
-    const { teacherId, disciplineId } = req.body;
-
-    if (Number.isNaN(classId)) {
-      return res.status(400).json({ message: 'Неверный ID класса' });
-    }
-    if (typeof teacherId !== 'number' || typeof disciplineId !== 'number') {
-      return res.status(400).json({ message: 'teacherId и disciplineId должны быть числами' });
-    }
-
-    const result = await ClassService.assignDisciplineToClass(classId, { teacherId, disciplineId });
-    return res.json(result);
+    if (isNaN(classId)) return res.status(400).json({ error: 'Неверный ID класса' });
+    const data = await ClassService.getDisciplineTeacherPairs(classId);
+    res.json(data);
   } catch (err) {
-    if (err.message && err.message.startsWith('Класс')) {
-      return res.status(404).json({ message: err.message });
-    }
-    if (err.message && err.message.startsWith('Учитель')) {
-      return res.status(404).json({ message: err.message });
-    }
-    if (err.message && err.message.startsWith('Дисциплина')) {
-      return res.status(404).json({ message: err.message });
-    }
+    return next(err);
+  }
+}
+
+async function searchDisciplineTeacherPairs(req, res, next) {
+  try {
+    const classId = Number(req.params.id);
+    const search = String(req.query.search || '');
+    if (isNaN(classId)) return res.status(400).json({ error: 'Неверный ID класса' });
+    const data = await ClassService.searchDisciplineTeacherPairs(classId, search);
+    res.json(data);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+async function assignDisciplineTeacherPairs(req, res, next) {
+  try {
+    const classId = Number(req.params.id);
+    const { pairs } = req.body;
+    if (isNaN(classId)) return res.status(400).json({ error: 'Неверный ID класса' });
+    await ClassService.assignDisciplineTeacherPairs(classId, pairs);
+    res.sendStatus(204);
+  } catch (err) {
     return next(err);
   }
 }
@@ -167,5 +169,7 @@ module.exports = {
   updateClass,
   deleteClass,
   assignStudents,
-  assignDiscipline,
+  viewDisciplineTeacherPairs,
+  searchDisciplineTeacherPairs,
+  assignDisciplineTeacherPairs,
 };

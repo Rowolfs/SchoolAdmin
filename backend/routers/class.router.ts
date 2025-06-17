@@ -8,6 +8,9 @@ const {
   deleteClass,
   assignStudents,
   assignDiscipline, // добавили
+  viewDisciplineTeacherPairs,
+  searchDisciplineTeacherPairs,
+  assignDisciplineTeacherPairs,
 } = require('../controllers/class.controller');
 const { verifyToken, authorize } = require('../middlewares/auth');
 
@@ -34,7 +37,14 @@ router.delete('/:id', authorize(['ADMIN']), deleteClass);
 // 6. Назначение учеников в класс (ADMIN и TEACHER)
 router.post('/:id/students', authorize(['ADMIN', 'TEACHER']), assignStudents);
 
-// 7. Назначение дисциплины классу через связку «учитель-дисциплина» (ADMIN и TEACHER)
-router.post('/:id/discipline', authorize(['ADMIN', 'TEACHER']), assignDiscipline);
+
+// GET /api/classes/:id/discipline-teachers
+router.get('/:id/discipline-teachers', viewDisciplineTeacherPairs);
+
+// GET /api/classes/:id/discipline-teachers/search
+router.get('/:id/discipline-teachers/search', searchDisciplineTeacherPairs);
+
+// PUT /api/classes/:id/discipline-teachers
+router.put('/:id/discipline-teachers', assignDisciplineTeacherPairs);
 
 module.exports = router;
