@@ -28,6 +28,30 @@ export async function getDisciplines(): Promise<Discipline[]> {
   const res = await api.get<Discipline[]>('/disciplines');
   return res.data;
 }
+export async function searchTeachers(
+  searchStr: string,
+  disciplineId: number
+): Promise<Teacher[]> {
+
+  const params: Record<string, string> = {};
+  if (searchStr) params.search = searchStr;
+  params.disciplineId = String(disciplineId);
+  const res = await api.get<Teacher[]>('/teachers', { params });
+  return res.data;
+
+}
+
+
+
+
+
+/**
+
+ * Назначить список преподавателей на дисциплину
+
+ */
+// Duplicate assignTeachers function removed to resolve redeclaration error.
+
 
 /**
  * Создать новую дисциплину

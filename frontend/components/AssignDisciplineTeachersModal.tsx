@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useDisciplineTeachersByClass } from '../hooks/useDisciplineTeachersByClass';
-import type { DisciplineTeacherPair } from '../utils/classApi';
+import type { DisciplineTeacherPair } from '../utils/classAPI';
 
 interface Props {
   isOpen: boolean;

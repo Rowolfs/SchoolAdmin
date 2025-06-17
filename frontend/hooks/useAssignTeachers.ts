@@ -1,12 +1,9 @@
-// frontend/hooks/useSearchTeachers.ts
+// frontend/hooks/useAssignTeachers.ts
 
-import { useQuery } from '@tanstack/react-query';
-import {
-  searchTeachers,
-  assignTeachers
-} from '../utils/disciplineAPI';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { assignTeachers, searchTeachers } from '../utils/disciplineAPI';
 
-interface TeacherShort {
+export interface TeacherShort {
   id: number;
   user: {
     id: number;
@@ -16,14 +13,13 @@ interface TeacherShort {
   };
 }
 
-
 export function useAssignTeachers() {
   const queryClient = useQueryClient();
   return useMutation<void, Error, { disciplineId: number; teacherIds: number[] }>(
-    ({ disciplineId, teacherIds }) => assignTeachers({ disciplineId, teacherIds }),
+    ({ disciplineId, teacherIds }) => assignTeachers(disciplineId, teacherIds),
     {
       onSuccess: (_data, variables) => {
-        // После назначения обновляем кэш учителей для этой дисциплины и сам список дисциплин
+        // После успешного назначения инвалидируем кэши
         queryClient.invalidateQueries(['teachersByDiscipline', variables.disciplineId]);
         queryClient.invalidateQueries(['disciplines']);
       },
@@ -31,15 +27,12 @@ export function useAssignTeachers() {
   );
 }
 
-export function useSearchTeachers(
-  searchStr: string,
-  disciplineId: number
-) {
+export function useSearchTeachers(searchStr: string, disciplineId: number) {
   return useQuery<TeacherShort[], Error>(
     ['searchTeachers', disciplineId, searchStr],
     () => searchTeachers(searchStr, disciplineId),
     {
-      enabled: disciplineId > 0,
+      enabled: disciplineId > 0 && searchStr.trim().length > 0,
     }
   );
 }

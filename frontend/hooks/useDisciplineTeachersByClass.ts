@@ -1,48 +1,34 @@
 // frontend/hooks/useDisciplineTeachersByClass.ts
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  ClassAPI,
-  DisciplineTeacherPair,
-} from '../utils/classAPI';
+import { ClassAPI, DisciplineTeacherPair } from '../utils/classAPI';
 
 export function useDisciplineTeachersByClass(classId: number) {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
 
-  const assignedQuery = useQuery<DisciplineTeacherPair[], Error>(
-    ['classes', classId, 'disc-teachers'],
+  const { data, isLoading } = useQuery<DisciplineTeacherPair[], Error>(
+    ['disciplineTeachersByClass', classId],
     () => ClassAPI.getDisciplineTeacherPairs(classId),
-    { enabled: !!classId }
+    { enabled: classId > 0 }
   );
 
-  const searchMutation = useMutation<DisciplineTeacherPair[], Error, string>(
-    search => ClassAPI.searchDisciplineTeacherPairs(classId, search)
+  const search = useMutation<DisciplineTeacherPair[], Error, string>(
+    (searchStr) => ClassAPI.searchDisciplineTeacherPairs(classId, searchStr)
   );
 
-  const assignMutation = useMutation<void, Error, { pairs: number[] }>(
-    ({ pairs }) =>
-      ClassAPI.assignDisciplineTeacherPairs(classId, pairs),
+  const assign = useMutation<void, Error, { pairs: number[] }>(
+    ({ pairs }) => ClassAPI.assignDisciplineTeacherPairs(classId, pairs),
     {
       onSuccess: () => {
-        qc.invalidateQueries(['classes', classId, 'disc-teachers']);
-        qc.invalidateQueries(['classes']);
+        queryClient.invalidateQueries(['disciplineTeachersByClass', classId]);
       },
     }
   );
 
   return {
-    data: assignedQuery.data ?? [],
-    isLoading: assignedQuery.isLoading,
-
-    search: {
-      mutate: searchMutation.mutate,
-      data: searchMutation.data,
-      isLoading: searchMutation.isLoading,
-    },
-
-    assign: {
-      mutate: assignMutation.mutate,
-      isLoading: assignMutation.isLoading,
-    },
+    data: data ?? [],
+    isLoading,
+    search,
+    assign,
   };
 }

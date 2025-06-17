@@ -1,100 +1,117 @@
-// frontend/components/AssignDisciplineTeachersModal.tsx
+// frontend/components/AssignTeachersModal.tsx
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useDisciplineTeachersByClass } from '../hooks/useDisciplineTeachersByClass';
-import type { DisciplineTeacherPair } from '../utils/classApi';
+import React, { useState, useEffect } from 'react';
+import { useSearchTeachers } from '../hooks/useSearchTeachers';
+import { useTeachersByDiscipline } from '../hooks/useTeachersByDiscipline';
+import { useAssignTeachers } from '../hooks/useDisciplines';
 
-interface Props {
+interface AssignTeachersModalProps {
   isOpen: boolean;
   onClose: () => void;
-  classId: number;
+  disciplineId: number;
+  existingTeacherIds: number[];
 }
 
-export default function AssignDisciplineTeachersModal({
+export default function AssignTeachersModal({
   isOpen,
   onClose,
-  classId,
-}: Props) {
+  disciplineId,
+  existingTeacherIds,
+}: AssignTeachersModalProps) {
+  // 1) Сразу получаем уже закреплённых за дисциплиной Teacher.id
   const {
-    data,
-    isLoading,
-    search: { mutate: searchMutate, isLoading: isSearchLoading },
-    assign: { mutate: assignMutate, isLoading: isAssigning },
-  } = useDisciplineTeachersByClass(classId);
+    data: teachersOfDiscipline = [],
+    isLoading: loadingAssigned,
+  } = useTeachersByDiscipline(disciplineId);
 
-  const [query, setQuery] = useState('');
-  const [list, setList] = useState<DisciplineTeacherPair[]>([]);
-  const [selected, setSelected] = useState<Set<number>>(new Set());
-  const debounceRef = useRef<NodeJS.Timeout>();
+  // 2) Локальное состояние строки поиска
+  const [searchStr, setSearchStr] = useState<string>('');
+
+  // 3) «Доступные» преподаватели (и занятые, и свободные)
+  const {
+    data: searchResults = [],
+    isLoading: loadingSearchResults,
+  } = useSearchTeachers(searchStr, disciplineId);
+
+  // 4) Локальный массив «отмеченных» Teacher.id
+  //    Инициализируется при открытии модалки
+  const [checkedIds, setCheckedIds] = useState<number[]>([]);
 
   useEffect(() => {
-    if (!isOpen) return;
-    setSelected(new Set(data.filter(p => p.assigned).map(p => p.id)));
-    setQuery('');
-    searchMutate('', { onSuccess: setList });
-  }, [isOpen, classId, data, searchMutate]);
+    if (isOpen) {
+      setSearchStr('');
+      setCheckedIds(teachersOfDiscipline.map(t => t.id));
+    }
+  }, [isOpen, teachersOfDiscipline]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      searchMutate(query.trim(), { onSuccess: setList });
-    }, 300);
-    return () => clearTimeout(debounceRef.current);
-  }, [query, isOpen, searchMutate]);
+  // 5) Мутация для отправки списка
+  const assignMutation = useAssignTeachers();
 
-  const toggle = (p: DisciplineTeacherPair) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      next.has(p.id) ? next.delete(p.id) : next.add(p.id);
-      return next;
-    });
+  // 6) Обработчик клика по чекбоксу
+  const toggleCheck = (id: number) => {
+    setCheckedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
   };
 
-  const onSave = () => {
-    const selectedIds = list.filter(p => selected.has(p.id)).map(p => p.id);
-    assignMutate({ pairs: selectedIds }, { onSuccess: onClose });
+  // 7) Сохранить изменения
+  const handleSave = () => {
+    assignMutation.mutate(
+      { disciplineId, teacherIds: checkedIds },
+      {
+        onSuccess: () => {
+          onClose();
+        },
+      }
+    );
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-xl max-h-[80vh] overflow-y-auto">
+      <div className="bg-white p-6 rounded shadow-lg w-96 max-h-[80vh] overflow-y-auto">
+        {/* Заголовок и кнопка «закрыть» */}
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold">Назначить пары «дисциплина–учитель»</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+          <h2 className="text-xl font-semibold">Назначить преподавателей</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            ✕
+          </button>
         </div>
 
+        {/* Строка поиска */}
         <input
           type="text"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Поиск по ФИО или дисциплине"
-          className="w-full border rounded-lg px-4 py-2 mb-4"
+          placeholder="Поиск по ФИО..."
+          value={searchStr}
+          onChange={e => setSearchStr(e.target.value)}
+          className="w-full border px-3 py-2 mb-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
         />
 
-        <div className="border rounded-lg mb-4 max-h-64 overflow-y-auto">
-          {(isLoading || isSearchLoading) ? (
-            <p className="text-center py-4">Загрузка…</p>
+        {/* Список «доступных» + «назначенных» */}
+        <div className="max-h-64 overflow-y-auto border rounded mb-4">
+          {(loadingAssigned || loadingSearchResults) ? (
+            <p className="p-2 text-center text-gray-400">Загрузка…</p>
+          ) : searchResults.length === 0 ? (
+            <p className="p-2 text-center text-gray-500">Ничего не найдено</p>
           ) : (
-            list.map(p => {
-              const checked = selected.has(p.id);
+            searchResults.map(teacher => {
+              const isChecked = checkedIds.includes(teacher.id);
+              const fio = `${teacher.user.surname} ${teacher.user.name} ${teacher.user.patronymic}`;
+
               return (
                 <label
-                  key={p.id}
-                  className={`flex justify-between items-center px-4 py-2 cursor-pointer ${
-                    checked ? 'bg-blue-100' : 'hover:bg-gray-100'
+                  key={teacher.id}
+                  className={`flex items-center justify-between px-3 py-2 cursor-pointer ${
+                    isChecked ? 'bg-blue-100' : 'hover:bg-gray-100'
                   }`}
                 >
-                  <span>
-                    {p.discipline.name} — {p.teacher.user.surname} {p.teacher.user.name}
-                  </span>
+                  <span>{fio}</span>
                   <input
                     type="checkbox"
-                    checked={checked}
-                    onChange={() => toggle(p)}
-                    className="w-4 h-4"
+                    checked={isChecked}
+                    onChange={() => toggleCheck(teacher.id)}
+                    className="w-4 h-4 text-blue-600 border-gray-300"
                   />
                 </label>
               );
@@ -102,16 +119,20 @@ export default function AssignDisciplineTeachersModal({
           )}
         </div>
 
+        {/* Кнопки «Отмена» и «Сохранить» */}
         <div className="flex justify-end space-x-2">
-          <button onClick={onClose} className="px-4 py-2 rounded-2xl bg-gray-200 hover:bg-gray-300">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+          >
             Отмена
           </button>
           <button
-            onClick={onSave}
-            disabled={isAssigning}
-            className="px-4 py-2 rounded-2xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+            onClick={handleSave}
+            disabled={assignMutation.isLoading}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            {isAssigning ? 'Сохраняем…' : 'Сохранить'}
+            {assignMutation.isLoading ? 'Сохраняем…' : 'Сохранить'}
           </button>
         </div>
       </div>
