@@ -1,0 +1,598 @@
+backend/
+├── controllers/auth.controller.ts
+│   ├── [import] const jwt = require('jsonwebtoken');
+│   ├── [import] const bcrypt = require('bcrypt');
+│   ├── [import] const UserService = require('../services/UserService');
+│   ├── [import] const prisma = require('../prisma/client').getInstance();
+│   ├── async function register(req, res, next) {
+│   ├── async function login(req, res, next) {
+│   ├── [method] if (err.message === 'User already exists') {
+│   ├── [method] if (err.message === 'Invalid role') {
+│   ├── [method] if (!email || !password) {
+│   ├── [method] if (!user) {
+│   ├── [method] if (!match) {
+├── controllers/class.controller.ts
+│   ├── [import] const ClassService = require('../services/ClassService');
+│   ├── async function viewClasses(req, res, next) {
+│   ├── async function viewClassById(req, res, next) {
+│   ├── async function createClass(req, res, next) {
+│   ├── async function updateClass(req, res, next) {
+│   ├── async function deleteClass(req, res, next) {
+│   ├── async function assignStudents(req, res, next) {
+│   ├── async function viewDisciplineTeacherPairs(req, res, next) {
+│   ├── async function searchDisciplineTeacherPairs(req, res, next) {
+│   ├── async function assignDisciplineTeacherPairs(req, res, next) {
+│   ├── [method] if (Number.isNaN(id)) {
+│   ├── [method] if (!cls) {
+│   ├── [method] if (!name || typeof name !== 'string') {
+│   ├── [method] if (Number.isNaN(id)) {
+│   ├── [method] if (classTeacher !== undefined && classTeacher !== null && isNaN(Number(classTeacher))) {
+│   ├── [method] if (err.code === 'P2025') {
+│   ├── [method] if (Number.isNaN(id)) {
+│   ├── [method] if (err.code === 'P2025') {
+│   ├── [method] if (Number.isNaN(classId)) {
+│   ├── [method] if (!Array.isArray(pupilIds) || pupilIds.some(id => isNaN(Number(id)))) {
+├── controllers/discipline.controller.ts
+│   ├── [import] const DisciplineService = require('../services/DisciplineService');
+│   ├── [import] const TeacherService = require('../services/TeacherService');
+│   ├── [method] async getAll(req, res) {
+│   ├── [method] async create(req, res) {
+│   ├── [method] async remove(req, res) {
+│   ├── [method] async getTeachers(req, res) {
+│   ├── [method] async searchTeachersByDiscipline(req, res) {
+│   ├── [method] async assignTeachers(req, res) {
+├── controllers/grade.controller.ts
+│   ├── [import] const GradeService = require('../services/GradeService');
+│   ├── async function getDisciplinesAndClassesByTeacher(req, res) {
+│   ├── async function getPupilsByClass(req, res) {
+│   ├── async function getGrades(req, res) {
+│   ├── async function addOrUpdateGrade(req, res) {
+│   ├── async function softDeleteGrade(req, res) {
+│   ├── [method] if (isNaN(classId) || isNaN(disciplineTeacherId)) {
+├── controllers/student.controller.ts
+│   ├── [import] const PupilService = require('../services/PupilService');
+│   ├── async function viewStudents(req, res, next) {
+│   ├── async function viewStudentsByClass(req, res, next) {
+│   ├── async function searchStudents(req, res, next) {
+│   ├── [method] if (Number.isNaN(classId)) {
+│   ├── [method] if (!query) {
+├── controllers/teacher.controller.ts
+│   ├── [import] import { Request, Response, NextFunction } from 'express';
+│   ├── [import] const TeacherService = require('../services/TeacherService');
+│   ├── export async function viewAllTeachers(req: Request, res: Response, next: NextFunction) {
+│   ├── export async function viewTeacherByUserId(req: Request, res: Response, next: NextFunction) {
+│   ├── export async function deleteTeacher(req: Request, res: Response, next: NextFunction) {
+│   ├── export async function restoreTeacher(req: Request, res: Response, next: NextFunction) {
+│   ├── export async function viewTeachersByDiscipline(req: Request, res: Response, next: NextFunction) {
+│   ├── export async function searchTeachersByDiscipline(req: Request, res: Response, next: NextFunction) {
+│   ├── [method] if (Number.isNaN(userId)) {
+│   ├── [method] if (!teacher) {
+│   ├── [method] if (Number.isNaN(userId)) {
+│   ├── [method] if (Number.isNaN(userId)) {
+│   ├── [method] if (Number.isNaN(disciplineId)) {
+│   ├── [method] if (Number.isNaN(disciplineId)) {
+├── controllers/user.controller.ts
+│   ├── [import] const UserService = require('../services/UserService');
+│   ├── async function getProfile(req, res, next) {
+│   ├── async function getUsers(req, res, next) {
+│   ├── async function searchUsers(req, res, next) {
+│   ├── async function filterUsers(req, res, next) {
+│   ├── async function changeUserRoleHandler(req, res, next) {
+│   ├── async function deleteUserHandler(req, res, next) {
+│   ├── async function updateUserHandler(req, res, next) {
+│   ├── [method] if (!user) {
+│   ├── [method] if (!q) {
+│   ├── [method] if (from && to) {
+├── index.ts
+│   ├── [import] const express = require('express');
+│   ├── [import] const cors = require('cors');
+│   ├── [import] const cookieParser = require('cookie-parser');
+│   ├── [import] const authRouter = require('./routers/auth.router');
+│   ├── [import] const userRouter = require('./routers/user.router');
+│   ├── [import] const teacherRouter = require('./routers/teacher.router');
+│   ├── [import] const classRouter = require('./routers/class.router');
+│   ├── [import] const studentRouter = require('./routers/student.router');
+│   ├── [import] const disciplineRouter = require('./routers/discipline.router');
+├── middlewares/auth.ts
+│   ├── [import] import jwt from 'jsonwebtoken';
+│   ├── [import] import { Request, Response, NextFunction } from 'express';
+│   ├── [export] export function verifyToken(req: Request, res: Response, next: NextFunction) {
+│   ├── [export] export function authorize(roles: string[]) {
+│   ├── export function verifyToken(req: Request, res: Response, next: NextFunction) {
+│   ├── export function authorize(roles: string[]) {
+│   ├── [method] if (authHeader && authHeader.startsWith('Bearer ')) {
+│   ├── [method] if (!token) {
+│   ├── [method] if (!req.user) {
+│   ├── [method] if (!roles.includes(req.user.role)) {
+├── prisma/client.ts
+│   ├── [method] private constructor() {}
+│   ├── [method] if (!PrismaSingleton.instance) {
+├── prisma/seed.ts
+│   ├── [import] const bcrypt = require('bcrypt');
+│   ├── [import] const dotenv = require('dotenv');
+│   ├── async function seed() {
+│   ├── [method] for (const name of roles) {
+├── routers/auth.router.ts
+│   ├── [import] const express = require('express');
+│   ├── [route] register
+│   ├── [route] login
+├── routers/class.router.ts
+│   ├── [import] const express = require('express');
+│   ├── [route] authorize(['ADMIN', 'TEACHER']
+│   ├── [route] authorize(['ADMIN', 'TEACHER']
+│   ├── [route] authorize(['ADMIN']
+│   ├── [route] authorize(['ADMIN']
+│   ├── [route] authorize(['ADMIN']
+│   ├── [route] authorize(['ADMIN', 'TEACHER']
+│   ├── [route] viewDisciplineTeacherPairs
+│   ├── [route] searchDisciplineTeacherPairs
+│   ├── [route] assignDisciplineTeacherPairs
+├── routers/discipline.router.ts
+│   ├── [import] const express = require('express');
+│   ├── [import] const DisciplineController = require('../controllers/discipline.controller');
+│   ├── [import] const TeacherController    = require('../controllers/teacher.controller');
+│   ├── [route] DisciplineController.getAll
+│   ├── [route] DisciplineController.create
+│   ├── [route] DisciplineController.remove
+│   ├── [route] DisciplineController.getTeachers
+│   ├── [route] TeacherController.searchTeachersByDiscipline
+│   ├── [route] DisciplineController.assignTeachers
+├── routers/grade.router.ts
+│   ├── [import] const express = require('express');
+│   ├── [route] getDisciplinesAndClassesByTeacher
+│   ├── [route] getPupilsByClass
+│   ├── [route] getGrades
+│   ├── [route] addOrUpdateGrade
+│   ├── [route] softDeleteGrade
+├── routers/student.router.ts
+│   ├── [import] const express = require('express');
+│   ├── [route] authorize(['ADMIN', 'TEACHER']
+├── routers/teacher.router.ts
+│   ├── [import] const express = require('express');
+│   ├── [import] const TeacherController = require('../controllers/teacher.controller');
+│   ├── [route] TeacherController.viewAllTeachers
+│   ├── [route] TeacherController.viewTeacherByUserId
+│   ├── [route] TeacherController.deleteTeacher
+│   ├── [route] TeacherController.restoreTeacher
+├── routers/user.router.ts
+│   ├── [route] verifyToken, getProfile
+│   ├── [route] searchUsers
+│   ├── [route] changeUserRoleHandler
+│   ├── [route] updateUserHandler
+│   ├── [route] deleteUserHandler
+│   ├── [route] getUsers
+├── services/ClassService.ts
+│   ├── [import] const PrismaSingleton = require('../prisma/client');
+│   ├── [method] static async getAllClasses() {
+│   ├── [method] if (c.teacher && c.teacher.deletedAt === null) {
+│   ├── [method] static async getClassById(id) {
+│   ├── [method] static async createClass(data) {
+│   ├── [method] static async updateClass(id, changes) {
+│   ├── [method] if (Object.prototype.hasOwnProperty.call(changes, 'classTeacher')) {
+│   ├── [method] if (Object.keys(dataToUpdate).length === 0) {
+│   ├── [method] static async deleteClass(id) {
+│   ├── [method] static async assignStudentsToClass(classId, pupilIds) {
+│   ├── [method] static async getDisciplineTeacherPairs(classId: number) {
+│   ├── [method] static async searchDisciplineTeacherPairs(classId: number, search: string) {
+│   ├── [method] if (search) {
+│   ├── [method] static async assignDisciplineTeacherPairs(classId: number, pairs: { id: number }[]) {
+├── services/DisciplineService.ts
+│   ├── [import] const PrismaSingleton = require('../prisma/client');
+│   ├── [method] static async getAllDisciplines() {
+│   ├── [method] static async getTeachersByDiscipline(disciplineId) {
+│   ├── [method] if (!existingDisc || existingDisc.deletedAt) {
+│   ├── [method] static async create(data) {
+│   ├── [method] static async assignTeachers(disciplineId, teacherIds) {
+│   ├── [method] if (!existingDisc || existingDisc.deletedAt) {
+│   ├── [method] if (!Array.isArray(teacherIds) || teacherIds.length === 0) {
+│   ├── [method] for (const teacherId of teacherIds) {
+│   ├── [method] if (!existingTeacher || existingTeacher.deletedAt) {
+│   ├── [method] if (existingLink) {
+│   ├── [method] if (existingLink.deletedAt) {
+│   ├── [method] static async remove(id) {
+├── services/GradeService.ts
+│   ├── [import] const PrismaSingleton = require('../prisma/client');
+│   ├── [method] async getDisciplinesAndClassesByTeacher(teacherId: number) {
+│   ├── [method] for (const item of pairs) {
+│   ├── [method] if (!seen.has(key)) {
+│   ├── [method] async getPupilsByClass(classId: number) {
+│   ├── [method] async getGrades(opts: { classId: number; disciplineTeacherId: number; quarter?: number }) {
+│   ├── [method] async addOrUpdateGrade(params: GradeParams) {
+│   ├── [method] if (existing) {
+│   ├── [method] async softDeleteGrade(id: number | string) {
+├── services/PupilService.ts
+│   ├── [import] const PrismaSingleton = require('../prisma/client');
+│   ├── [method] async createPupil(userId: number) {
+│   ├── [method] async getAllPupils() {
+│   ├── [method] async getByUserId(userId) {
+│   ├── [method] async getPupilsByClass(classId) {
+│   ├── [method] async updateClass(userId, payload) {
+│   ├── [method] if (!existingPupil) {
+│   ├── [method] if (classId === existingPupil.classId) {
+│   ├── [method] async deletePupil(userId) {
+│   ├── [method] async restorePupil(userId) {
+│   ├── [method] async searchPupils(query) {
+├── services/TeacherService.ts
+│   ├── [import] const PrismaSingleton = require('../prisma/client');
+│   ├── [method] async getAllTeachers() {
+│   ├── [method] async getByUserId(userId) {
+│   ├── [method] async deleteTeacher(userId) {
+│   ├── [method] async restoreTeacher(userId) {
+│   ├── [method] async createOrRestore(userId) {
+│   ├── [method] if (existing) {
+│   ├── [method] if (existing.deletedAt) {
+│   ├── [method] async getByDiscipline(disciplineId: number) {
+│   ├── [method] async searchAllTeachers(searchStr: string) {
+│   ├── [method] if (searchStr) {
+├── services/UserService.ts
+│   ├── [import] const bcrypt = require('bcrypt');
+│   ├── [import] const PrismaSingleton = require('../prisma/client');
+│   ├── [import] const TeacherService = require('./TeacherService');
+│   ├── [import] const PupilService = require('./PupilService');
+│   ├── [method] async registerUser({ email, password, roleName, name, surname, patronymic }) {
+│   ├── [method] if (role.name === 'STUDENT') {
+│   ├── [method] async getAllUsers(excludeUserId) {
+│   ├── [method] async getById(userId) {
+│   ├── [method] async searchUsersByName(query, excludeUserId) {
+│   ├── [method] async updateUser(userId, payload) {
+│   ├── [method] if (newRoleName !== undefined) {
+│   ├── [method] if (newRoleName === 'TEACHER' && oldRole !== 'TEACHER') {
+│   ├── [method] if (newRoleName === 'STUDENT' && oldRole !== 'STUDENT') {
+│   ├── [method] async deleteUser(userId) {
+├── swagger.ts
+│   ├── [import] const path = require('path');
+│   ├── [import] const swaggerJSDoc = require('swagger-jsdoc');
+│   ├── [import] const swaggerUi = require('swagger-ui-express');
+│   ├── function setupSwagger(app) {
+
+frontend/
+├── components/AssignDisciplineTeachersModal.tsx
+│   ├── [import] import React, { useState, useEffect, useRef } from 'react';
+│   ├── [import] import { useDisciplineTeachersByClass } from '../hooks/useDisciplineTeachersByClass';
+│   ├── [import] import type { DisciplineTeacherPair } from '../utils/classAPI';
+│   ├── [export] export default function AssignDisciplineTeachersModal({
+│   ├── [arrow] const toggle = (p: DisciplineTeacherPair) => {
+│   ├── [arrow] const onSave = () => {
+│   ├── [export default fn] export default function AssignDisciplineTeachersModal({
+├── components/AssignStudentsModal.tsx
+│   ├── [import] import React, { useState, useEffect } from 'react';
+│   ├── [import] import { useSearchStudents } from '../hooks/useSearchStudents';
+│   ├── [import] import { useStudentsByClass } from '../hooks/useStudentsByClass';
+│   ├── [import] import { useAssignStudents } from '../hooks/useAssignStudents';
+│   ├── [export] export default function AssignStudentsModal({
+│   ├── [arrow] const toggleCheck = (id: number) => {
+│   ├── [arrow] const handleSave = () => {
+│   ├── [method] if (isOpen) {
+│   ├── [export default fn] export default function AssignStudentsModal({
+│   ├── [object method] onSuccess: () => {
+├── components/AssignTeacherModal.tsx
+│   ├── [import] import React, { useState, useEffect } from 'react';
+│   ├── [import] import { useTeachers } from '../hooks/useTeachers';
+│   ├── [import] import { useAssignTeacher } from '../hooks/useAssignTeacher';
+│   ├── [export] export default function AssignTeacherModal({
+│   ├── [arrow] const handleSave = () => {
+│   ├── [method] if (isOpen) {
+│   ├── [export default fn] export default function AssignTeacherModal({
+│   ├── [object method] onSuccess: () => {
+├── components/AssignTeachersModal.tsx
+│   ├── [import] import React, { useState, useEffect } from 'react';
+│   ├── [import] import { useSearchTeachers } from '../hooks/useSearchTeachers';
+│   ├── [import] import { useTeachersByDiscipline } from '../hooks/useTeachersByDiscipline';
+│   ├── [import] import { useAssignTeachers } from '../hooks/useDisciplines';
+│   ├── [export] export default function AssignTeachersModal({
+│   ├── [arrow] const toggleCheck = (id: number) => {
+│   ├── [arrow] const handleSave = () => {
+│   ├── [method] if (isOpen) {
+│   ├── [export default fn] export default function AssignTeachersModal({
+│   ├── [object method] onSuccess: () => {
+├── components/DataTable.tsx
+│   ├── [import] import React, { useState, useEffect } from 'react'
+│   ├── [import] import {
+│   ├── [export] export default function DataTable<T>({ columns, data, isLoading }: DataTableProps<T>) {
+│   ├── [export default fn] export default function DataTable<T>({ columns, data, isLoading }: DataTableProps<T>) {
+├── components/DefaultLayout.tsx
+│   ├── [import] import React, { ReactNode, useEffect } from 'react';
+│   ├── [import] import { useRouter } from 'next/router';
+│   ├── [import] import { useQuery } from '@tanstack/react-query';
+│   ├── [import] import { AuthAPI, UserPayload } from '../../utils/authAPI';
+│   ├── [method] if (isLoading) {
+│   ├── [method] if (!user) {
+├── components/layout/DashboardLayout.tsx
+│   ├── [import] import React, { ReactNode, use, useState } from 'react'
+│   ├── [import] import { useRouter } from 'next/router'
+│   ├── [export] export default function DashboardLayout({ user, children }: DashboardLayoutProps) {
+│   ├── [method] if (!user || !user.role) {
+│   ├── [export default fn] export default function DashboardLayout({ user, children }: DashboardLayoutProps) {
+├── hooks/useAssignStudents.ts
+│   ├── [import] import { useMutation, useQueryClient } from '@tanstack/react-query';
+│   ├── [import] import { ClassAPI } from '../utils/classAPI';
+│   ├── [export] export function useAssignStudents() {
+│   ├── export function useAssignStudents() {
+│   ├── [object method] onSuccess: (_data, variables) => {
+├── hooks/useAssignTeacher.ts
+│   ├── [import] import { useMutation, useQueryClient } from '@tanstack/react-query';
+│   ├── [import] import { ClassAPI } from '../utils/classAPI';
+│   ├── [export] export function useAssignTeacher() {
+│   ├── export function useAssignTeacher() {
+│   ├── [object method] onSuccess: (_data, variables) => {
+├── hooks/useAssignTeachers.ts
+│   ├── [import] import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+│   ├── [import] import { assignTeachers, searchTeachers } from '../utils/disciplineAPI';
+│   ├── [export] export interface TeacherShort {
+│   ├── [export] export function useAssignTeachers() {
+│   ├── [export] export function useSearchTeachers(searchStr: string, disciplineId: number) {
+│   ├── export function useAssignTeachers() {
+│   ├── export function useSearchTeachers(searchStr: string, disciplineId: number) {
+│   ├── [object method] onSuccess: (_data, variables) => {
+├── hooks/useClasses.ts
+│   ├── [import] import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+│   ├── [import] import { ClassAPI, Class } from '../utils/classAPI';
+│   ├── [export] export function useClasses() {
+│   ├── [export] export function useCreateClass() {
+│   ├── [export] export function useDeleteClass() {
+│   ├── export function useClasses() {
+│   ├── export function useCreateClass() {
+│   ├── export function useDeleteClass() {
+│   ├── [object method] onSuccess: () => {
+│   ├── [object method] onSuccess: () => {
+├── hooks/useDisciplineTeachersByClass.ts
+│   ├── [import] import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+│   ├── [import] import { ClassAPI, DisciplineTeacherPair } from '../utils/classAPI';
+│   ├── [export] export function useDisciplineTeachersByClass(classId: number) {
+│   ├── export function useDisciplineTeachersByClass(classId: number) {
+│   ├── [object method] onSuccess: () => {
+├── hooks/useDisciplines.ts
+│   ├── [import] import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+│   ├── [import] import {
+│   ├── [export] export function useDisciplines() {
+│   ├── [export] export function useCreateDiscipline() {
+│   ├── [export] export function useDeleteDiscipline() {
+│   ├── [export] export function useTeachersByDiscipline(disciplineId: number) {
+│   ├── [export] export function useSearchTeachers(searchStr: string, disciplineId: number) {
+│   ├── [export] export function useAssignTeachers() {
+│   ├── export function useDisciplines() {
+│   ├── export function useCreateDiscipline() {
+│   ├── export function useDeleteDiscipline() {
+│   ├── export function useTeachersByDiscipline(disciplineId: number) {
+│   ├── export function useSearchTeachers(searchStr: string, disciplineId: number) {
+│   ├── export function useAssignTeachers() {
+│   ├── [object method] onSuccess: () => {
+│   ├── [object method] onSuccess: () => {
+│   ├── [object method] onSuccess: (_data, variables) => {
+├── hooks/useSearchStudents.ts
+│   ├── [import] import { useQuery } from '@tanstack/react-query';
+│   ├── [import] import { StudentAPI, Student } from '../utils/studentAPI';
+│   ├── [export] export function useSearchStudents(searchStr: string, activeClassId: number) {
+│   ├── export function useSearchStudents(searchStr: string, activeClassId: number) {
+│   ├── [method] if (trimmed.length > 0) {
+│   ├── [object method] queryFn: async () => {
+├── hooks/useSearchTeachers.ts
+│   ├── [import] import { useQuery } from '@tanstack/react-query';
+│   ├── [import] import {
+│   ├── [export] export function useSearchTeachers(
+├── hooks/useSearchUsers.ts
+│   ├── [import] import { useQuery } from '@tanstack/react-query';
+│   ├── [import] import { StudentAPI, Student } from '../utils/studentAPI';
+│   ├── [export] export default function useSearchStudents(query: string) {
+│   ├── [method] if (!query || query.trim() === '') {
+│   ├── [export default fn] export default function useSearchStudents(query: string) {
+│   ├── [object method] queryFn: async () => {
+├── hooks/useStudents.ts
+│   ├── [import] import { useQuery } from '@tanstack/react-query';
+│   ├── [export] export interface Student {
+│   ├── [export] export function useStudents() {
+│   ├── [export] export function useStudentsByClass(classId: number) {
+│   ├── export function useStudents() {
+│   ├── export function useStudentsByClass(classId: number) {
+├── hooks/useStudentsByClass.ts
+│   ├── [import] import { useQuery } from '@tanstack/react-query';
+│   ├── [import] import { StudentAPI, Student } from '../utils/studentAPI';
+│   ├── [export] export function useStudentsByClass(classId: number) {
+│   ├── export function useStudentsByClass(classId: number) {
+├── hooks/useTeachers.ts
+│   ├── [import] import { useQuery } from '@tanstack/react-query';
+│   ├── [import] import { TeacherAPI, Teacher } from '../utils/teacherAPI';
+│   ├── [export] export function useTeachers() {
+│   ├── export function useTeachers() {
+├── hooks/useTeachersByDiscipline.ts
+│   ├── [import] import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+│   ├── [import] import {
+│   ├── [export] export function useTeachersByDiscipline(disciplineId: number) {
+│   ├── export function useTeachersByDiscipline(disciplineId: number) {
+│   ├── [object method] onSuccess: () => {
+├── hooks/useUsers.ts
+│   ├── [import] import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+│   ├── [import] import api from '@/utils/api'
+│   ├── [export] export interface IUser {
+│   ├── [export] export interface IFilter {
+│   ├── [export] export const useUsers = (search?: string, filter?: IFilter) =>
+│   ├── [export] export const useUpdateUser = (search?: string, filter?: IFilter) => {
+│   ├── [export] export const useDeleteUser = () => {
+│   ├── [arrow] export const useUpdateUser = (search?: string, filter?: IFilter) => {
+│   ├── [arrow] export const useDeleteUser = () => {
+│   ├── [method] if (search) {
+│   ├── [method] if (filter && (filter.dateFrom || filter.dateTo || filter.role)) {
+│   ├── [object method] queryFn: async () => {
+│   ├── [object method] onMutate: async ({ id, changes }) => {
+│   ├── [object method] onError: (_err, _vars, context: any) => {
+│   ├── [object method] onSettled: () => {
+├── next-env.d.ts
+├── next.config.ts
+│   ├── [import] import { type NextConfig } from 'next'
+│   ├── [import] import path from 'path'
+│   ├── [method] webpack(config) {
+├── pages/_app.tsx
+│   ├── [import] import '@/styles/globals.css';
+│   ├── [import] import type { AppProps } from 'next/app';
+│   ├── [import] import { useState } from 'react';
+│   ├── [import] import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+│   ├── [import] import type { ReactElement, ReactNode } from 'react';
+│   ├── [import] import type { NextPage } from 'next';
+│   ├── [export] export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
+│   ├── [export] export default function App({ Component, pageProps }: AppPropsWithLayout) {
+│   ├── [export default fn] export default function App({ Component, pageProps }: AppPropsWithLayout) {
+├── pages/_document.tsx
+│   ├── [import] import { Html, Head, Main, NextScript } from "next/document";
+│   ├── [export] export default function Document() {
+│   ├── [export default fn] export default function Document() {
+├── pages/api/hello.ts
+│   ├── [import] import type { NextApiRequest, NextApiResponse } from "next";
+│   ├── [export] export default function handler(
+│   ├── [export default fn] export default function handler(
+├── pages/auth/login.tsx
+│   ├── [import] import { useState, FormEvent } from 'react'
+│   ├── [import] import { useRouter } from 'next/router'
+│   ├── [import] import Link from 'next/link'
+│   ├── [import] import api from '../../utils/api'
+│   ├── [arrow] const LoginPage = () => {
+│   ├── [arrow] const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+├── pages/auth/register.tsx
+│   ├── [import] import { useState, FormEvent } from 'react'
+│   ├── [import] import { useRouter } from 'next/router'
+│   ├── [import] import Link from 'next/link'
+│   ├── [import] import api from '../../utils/api'
+│   ├── [arrow] const RegisterPage = () => {
+│   ├── [arrow] const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+│   ├── [method] if(password != repeatPassword){
+├── pages/dashboard/classes.tsx
+│   ├── [import] import React, { useMemo, useState } from 'react';
+│   ├── [import] import { NextPage, GetServerSideProps } from 'next';
+│   ├── [import] import DashboardLayout from '../../components/layout/DashboardLayout';
+│   ├── [import] import DataTable from '../../components/DataTable';
+│   ├── [import] import { ColumnDef } from '@tanstack/react-table';
+│   ├── [import] import { Class as ClassType } from '../../utils/classAPI';
+│   ├── [import] import { useClasses, useCreateClass, useDeleteClass } from '../../hooks/useClasses';
+│   ├── [import] import { useStudentsByClass } from '../../hooks/useStudentsByClass';
+│   ├── [import] import AssignStudentsModal from '../../components/AssignStudentsModal';
+│   ├── [import] import AssignTeacherModal from '../../components/AssignTeacherModal';
+│   ├── [import] import AssignDisciplineTeachersModal from '../../components/AssignDisciplineTeachersModal';
+│   ├── [import] import { verifyTokenOnServer, UserPayload } from '../../utils/authAPI';
+│   ├── [export] export const getServerSideProps: GetServerSideProps = async (ctx) => {
+│   ├── [arrow] const openCreateModal = () => {
+│   ├── [arrow] const handleCreateClass = () => {
+│   ├── [arrow] const closeAssignStudentsModal = () => { setActiveClassIdForStudents(null); setIsAssignStudentsOpen(false); };
+│   ├── [arrow] const closeAssignTeacherModal  = () => { setActiveClassIdForTeacher(null);   setIsAssignTeacherOpen(false);   };
+│   ├── [arrow] const closeAssignPairsModal    = () => { setActiveClassIdForPairs(null);     setIsAssignPairsOpen(false);     };
+│   ├── [method] if (cls.teacher) {
+│   ├── [method] if (isError) {
+│   ├── [method] if (isLoading) {
+│   ├── [method] if (!user) {
+│   ├── [method] if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
+│   ├── [object method] cell: ({ row }) => {
+│   ├── [object method] cell: ({ row }) => {
+├── pages/dashboard/disciplines.tsx
+│   ├── [import] import React, { useMemo, useState } from 'react';
+│   ├── [import] import { NextPage, GetServerSideProps } from 'next';
+│   ├── [import] import DashboardLayout from '../../components/layout/DashboardLayout';
+│   ├── [import] import DataTable from '../../components/DataTable';
+│   ├── [import] import { ColumnDef } from '@tanstack/react-table';
+│   ├── [import] import { Discipline } from '../../utils/disciplineAPI';
+│   ├── [import] import { useQueryClient } from '@tanstack/react-query';
+│   ├── [import] import {
+│   ├── [import] import { useTeachersByDiscipline } from '../../hooks/useTeachersByDiscipline';
+│   ├── [import] import AssignTeachersModal from '../../components/AssignTeachersModal';
+│   ├── [import] import { verifyTokenOnServer, UserPayload } from '../../utils/authAPI';
+│   ├── [export] export const getServerSideProps: GetServerSideProps = async (ctx) => {
+│   ├── [arrow] const openCreateModal = () => {
+│   ├── [arrow] const handleCreateDiscipline = () => {
+│   ├── [arrow] const closeAssignModal = () => {
+│   ├── [method] if (disc.teachers && disc.teachers.length > 0) {
+│   ├── [method] if (isError) {
+│   ├── [method] if (isLoading) {
+│   ├── [method] if (!user) {
+│   ├── [method] if (user.role !== 'ADMIN') {
+│   ├── [object method] cell: ({ row }) => {
+│   ├── [object method] cell: ({ row }) => {
+│   ├── [object method] onSuccess: () => {
+├── pages/dashboard/grades.tsx
+│   ├── [import] import React, { useState, useEffect, useMemo } from 'react';
+│   ├── [import] import { NextPageWithLayout } from '@/pages/_app';
+│   ├── [import] import DashboardLayout from '@/components/layout/DashboardLayout';
+│   ├── [import] import { verifyTokenOnServer, UserPayload } from '@/utils/auth';
+│   ├── [import] import { GetServerSideProps } from 'next';
+│   ├── [import] import { GradesAPI, DisciplineClass, Pupil, Grade } from '@/utils/gradesAPI';
+│   ├── [export] export const getServerSideProps: GetServerSideProps<Props> = async ctx => {
+│   ├── [arrow] const disciplines = useMemo(() => {
+│   ├── [arrow] const classes = useMemo(() => {
+│   ├── [arrow] const handleSave = async (pupilId: number) => {
+│   ├── [method] if (!user) {
+├── pages/dashboard/index.tsx
+│   ├── [import] import React from 'react'
+│   ├── [import] import { GetServerSideProps, InferGetServerSidePropsType } from 'next'
+│   ├── [import] import DashboardLayout from '@/components/layout/DashboardLayout'
+│   ├── [import] import api from '@/utils/api'
+│   ├── [export] export default function DashboardPage({
+│   ├── [export] export const getServerSideProps: GetServerSideProps<{
+│   ├── [export default fn] export default function DashboardPage({
+├── pages/dashboard/users.tsx
+│   ├── [import] import React, { useState, ReactElement } from 'react'
+│   ├── [import] import { GetServerSideProps, InferGetServerSidePropsType } from 'next'
+│   ├── [import] import DashboardLayout from '@/components/layout/DashboardLayout'
+│   ├── [import] import DataTable from '@/components/DataTable'
+│   ├── [import] import api from '@/utils/api'
+│   ├── [import] import { ColumnDef } from '@tanstack/react-table'
+│   ├── [import] import { useUsers, useUpdateUser, useDeleteUser, IUser, IFilter } from '@/hooks/useUsers'
+│   ├── [export] export const getServerSideProps: GetServerSideProps<{ user: CurrentUser }> = async ctx => {
+│   ├── [arrow] const UsersPage = ({ user }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+│   ├── [object method] onSuccess: () => {
+│   ├── [object method] onError: (error) => {
+├── pages/index.tsx
+│   ├── [import] import Image from "next/image";
+│   ├── [import] import { Geist, Geist_Mono } from "next/font/google";
+│   ├── [export] export default function Home() {
+│   ├── [export default fn] export default function Home() {
+├── pages/teachers.tsx
+│   ├── [import] import { useEffect, useState } from 'react'
+│   ├── [import] import api from '../utils/api'
+│   ├── [export] export default function TeachersPage() {
+│   ├── [export default fn] export default function TeachersPage() {
+├── utils/api.ts
+│   ├── [import] import axios from 'axios';
+│   ├── [export] export interface User {
+│   ├── [export] export interface Student {
+│   ├── [export] export interface Class {
+│   ├── [export] export const UserAPI = {
+│   ├── [export] export const StudentAPI = {
+├── utils/apiClient.ts
+│   ├── [import] import axios from 'axios';
+├── utils/auth.ts
+│   ├── [import] import { GetServerSidePropsContext } from 'next';
+│   ├── [import] import api from './api';
+│   ├── [import] import { parseCookies } from 'nookies';
+│   ├── [export] export interface UserPayload {
+│   ├── [method] if (!token) {
+├── utils/authAPI.ts
+│   ├── [import] import apiClient from './apiClient';
+│   ├── [import] import { GetServerSidePropsContext } from 'next';
+│   ├── [import] import { parseCookies } from 'nookies';
+│   ├── [export] export interface UserPayload {
+│   ├── [method] if (!token) {
+├── utils/classAPI.ts
+│   ├── [import] import apiClient from './apiClient';
+│   ├── [export] export interface Class {
+│   ├── [export] export interface Discipline {
+│   ├── [export] export interface Teacher {
+│   ├── [export] export interface DisciplineTeacherPair {
+│   ├── [export] export const ClassAPI = {
+├── utils/disciplineAPI.ts
+│   ├── [import] import api from './apiClient';
+│   ├── [export] export interface Discipline {
+│   ├── [export] export interface Teacher {
+├── utils/gradesAPI.ts
+│   ├── [import] import apiClient from './apiClient';
+│   ├── [export] export interface DisciplineClass {
+│   ├── [export] export interface Pupil {
+│   ├── [export] export interface Grade {
+│   ├── [export] export const GradesAPI = {
+├── utils/studentAPI.ts
+│   ├── [import] import apiClient from './apiClient';
+│   ├── [export] export interface Student {
+│   ├── [export] export const StudentAPI = {
+├── utils/teacherAPI.ts
+│   ├── [import] import apiClient from './apiClient';
+│   ├── [export] export interface Teacher {
+│   ├── [export] export const TeacherAPI = {
+├── utils/userAPI.ts
+│   ├── [import] import apiClient from './apiClient';
+│   ├── [export] export interface User {
+│   ├── [export] export const UserAPI = {

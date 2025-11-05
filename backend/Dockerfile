@@ -1,25 +1,25 @@
-# backend/Dockerfile
-
-# Используем официальный образ Node.js LTS
 FROM node:18
 
-# Устанавливаем рабочую директорию внутри контейнера
+# Устанавливаем OpenSSL
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /usr/src/app
 
-# Копируем package.json и package-lock.json сначала, чтобы воспользоваться кэшем Docker
-COPY backend/package.json backend/package-lock.json ./
+# Копируем из локального контекста (папка backend)
+COPY package.json package-lock.json ./
 
 # Устанавливаем зависимости
-RUN npm install
+RUN npm ci
 
-# Копируем весь остальной код бэкенда
-COPY backend/ ./
+# Копируем схему Prisma из локального контекста
+COPY prisma ./prisma
 
-# Указываем переменную окружения (если нужно)
+# Генерируем Prisma Client внутри контейнера
+RUN npx prisma generate
+
+# Копируем весь код из текущего контекста (папка backend)
+COPY . ./
+
 ENV NODE_ENV=development
-
-# Открываем порт, на котором запускается бэкенд (например, 4000)
-EXPOSE 4000
-
-# Запускаем команду "npm run dev"
-CMD ["npm", "run", "dev"]
+EXPOSE 5000
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && npm run dev"]

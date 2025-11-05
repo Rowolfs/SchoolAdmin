@@ -35,9 +35,11 @@ export const getServerSideProps: GetServerSideProps<{
     const { data: user } = await api.get<User>('/users/me', {
       headers: { Cookie: cookie },
     })
+    console.log( { props: { user } } )
     return { props: { user } }
   } catch {
     // Если не залогинен — редирект на логин
+    console.log("back to auth")
     return {
       redirect: {
         destination: '/auth/login',

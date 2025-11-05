@@ -16,9 +16,11 @@ const LoginPage = () => {
     try {
       const response = await api.post('/auth/login', { email, password })
       localStorage.setItem('token', response.data.token)
+      console.log("login")
       router.push('/dashboard')
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login failed')
+      console.log("all bad")
     }
   }
 

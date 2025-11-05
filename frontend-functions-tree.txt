@@ -1,0 +1,155 @@
+frontend/
+├── components/AssignDisciplineTeachersModal.tsx
+│   ├── [arrow] const toggle = (p: DisciplineTeacherPair) => {
+│   ├── [arrow] const onSave = () => {
+│   ├── [export default fn] export default function AssignDisciplineTeachersModal({
+├── components/AssignStudentsModal.tsx
+│   ├── [arrow] const toggleCheck = (id: number) => {
+│   ├── [arrow] const handleSave = () => {
+│   ├── [method] if (isOpen) {
+│   ├── [export default fn] export default function AssignStudentsModal({
+│   ├── [object method] onSuccess: () => {
+├── components/AssignTeacherModal.tsx
+│   ├── [arrow] const handleSave = () => {
+│   ├── [method] if (isOpen) {
+│   ├── [export default fn] export default function AssignTeacherModal({
+│   ├── [object method] onSuccess: () => {
+├── components/AssignTeachersModal.tsx
+│   ├── [arrow] const toggleCheck = (id: number) => {
+│   ├── [arrow] const handleSave = () => {
+│   ├── [method] if (isOpen) {
+│   ├── [export default fn] export default function AssignTeachersModal({
+│   ├── [object method] onSuccess: () => {
+├── components/DataTable.tsx
+│   ├── [export default fn] export default function DataTable<T>({ columns, data, isLoading }: DataTableProps<T>) {
+├── components/DefaultLayout.tsx
+│   ├── [method] if (isLoading) {
+│   ├── [method] if (!user) {
+├── components/layout/DashboardLayout.tsx
+│   ├── [method] if (!user || !user.role) {
+│   ├── [export default fn] export default function DashboardLayout({ user, children }: DashboardLayoutProps) {
+├── hooks/useAssignStudents.ts
+│   ├── export function useAssignStudents() {
+│   ├── [object method] onSuccess: (_data, variables) => {
+├── hooks/useAssignTeacher.ts
+│   ├── export function useAssignTeacher() {
+│   ├── [object method] onSuccess: (_data, variables) => {
+├── hooks/useAssignTeachers.ts
+│   ├── export function useAssignTeachers() {
+│   ├── export function useSearchTeachers(searchStr: string, disciplineId: number) {
+│   ├── [object method] onSuccess: (_data, variables) => {
+├── hooks/useClasses.ts
+│   ├── export function useClasses() {
+│   ├── export function useCreateClass() {
+│   ├── export function useDeleteClass() {
+│   ├── [object method] onSuccess: () => {
+│   ├── [object method] onSuccess: () => {
+├── hooks/useDisciplineTeachersByClass.ts
+│   ├── export function useDisciplineTeachersByClass(classId: number) {
+│   ├── [object method] onSuccess: () => {
+├── hooks/useDisciplines.ts
+│   ├── export function useDisciplines() {
+│   ├── export function useCreateDiscipline() {
+│   ├── export function useDeleteDiscipline() {
+│   ├── export function useTeachersByDiscipline(disciplineId: number) {
+│   ├── export function useSearchTeachers(searchStr: string, disciplineId: number) {
+│   ├── export function useAssignTeachers() {
+│   ├── [object method] onSuccess: () => {
+│   ├── [object method] onSuccess: () => {
+│   ├── [object method] onSuccess: (_data, variables) => {
+├── hooks/useSearchStudents.ts
+│   ├── export function useSearchStudents(searchStr: string, activeClassId: number) {
+│   ├── [method] if (trimmed.length > 0) {
+│   ├── [object method] queryFn: async () => {
+├── hooks/useSearchTeachers.ts
+├── hooks/useSearchUsers.ts
+│   ├── [method] if (!query || query.trim() === '') {
+│   ├── [export default fn] export default function useSearchStudents(query: string) {
+│   ├── [object method] queryFn: async () => {
+├── hooks/useStudents.ts
+│   ├── export function useStudents() {
+│   ├── export function useStudentsByClass(classId: number) {
+├── hooks/useStudentsByClass.ts
+│   ├── export function useStudentsByClass(classId: number) {
+├── hooks/useTeachers.ts
+│   ├── export function useTeachers() {
+├── hooks/useTeachersByDiscipline.ts
+│   ├── export function useTeachersByDiscipline(disciplineId: number) {
+│   ├── [object method] onSuccess: () => {
+├── hooks/useUsers.ts
+│   ├── [arrow] export const useUpdateUser = (search?: string, filter?: IFilter) => {
+│   ├── [arrow] export const useDeleteUser = () => {
+│   ├── [method] if (search) {
+│   ├── [method] if (filter && (filter.dateFrom || filter.dateTo || filter.role)) {
+│   ├── [object method] queryFn: async () => {
+│   ├── [object method] onMutate: async ({ id, changes }) => {
+│   ├── [object method] onError: (_err, _vars, context: any) => {
+│   ├── [object method] onSettled: () => {
+├── next-env.d.ts
+├── next.config.ts
+│   ├── [method] webpack(config) {
+├── pages/_app.tsx
+│   ├── [export default fn] export default function App({ Component, pageProps }: AppPropsWithLayout) {
+├── pages/_document.tsx
+│   ├── [export default fn] export default function Document() {
+├── pages/api/hello.ts
+│   ├── [export default fn] export default function handler(
+├── pages/auth/login.tsx
+│   ├── [arrow] const LoginPage = () => {
+│   ├── [arrow] const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+├── pages/auth/register.tsx
+│   ├── [arrow] const RegisterPage = () => {
+│   ├── [arrow] const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+│   ├── [method] if(password != repeatPassword){
+├── pages/dashboard/classes.tsx
+│   ├── [arrow] const openCreateModal = () => {
+│   ├── [arrow] const handleCreateClass = () => {
+│   ├── [arrow] const closeAssignStudentsModal = () => { setActiveClassIdForStudents(null); setIsAssignStudentsOpen(false); };
+│   ├── [arrow] const closeAssignTeacherModal  = () => { setActiveClassIdForTeacher(null);   setIsAssignTeacherOpen(false);   };
+│   ├── [arrow] const closeAssignPairsModal    = () => { setActiveClassIdForPairs(null);     setIsAssignPairsOpen(false);     };
+│   ├── [method] if (cls.teacher) {
+│   ├── [method] if (isError) {
+│   ├── [method] if (isLoading) {
+│   ├── [method] if (!user) {
+│   ├── [method] if (user.role !== 'TEACHER' && user.role !== 'ADMIN') {
+│   ├── [object method] cell: ({ row }) => {
+│   ├── [object method] cell: ({ row }) => {
+├── pages/dashboard/disciplines.tsx
+│   ├── [arrow] const openCreateModal = () => {
+│   ├── [arrow] const handleCreateDiscipline = () => {
+│   ├── [arrow] const closeAssignModal = () => {
+│   ├── [method] if (disc.teachers && disc.teachers.length > 0) {
+│   ├── [method] if (isError) {
+│   ├── [method] if (isLoading) {
+│   ├── [method] if (!user) {
+│   ├── [method] if (user.role !== 'ADMIN') {
+│   ├── [object method] cell: ({ row }) => {
+│   ├── [object method] cell: ({ row }) => {
+│   ├── [object method] onSuccess: () => {
+├── pages/dashboard/grades.tsx
+│   ├── [arrow] const disciplines = useMemo(() => {
+│   ├── [arrow] const classes = useMemo(() => {
+│   ├── [arrow] const handleSave = async (pupilId: number) => {
+│   ├── [method] if (!user) {
+├── pages/dashboard/index.tsx
+│   ├── [export default fn] export default function DashboardPage({
+├── pages/dashboard/users.tsx
+│   ├── [arrow] const UsersPage = ({ user }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
+│   ├── [object method] onSuccess: () => {
+│   ├── [object method] onError: (error) => {
+├── pages/index.tsx
+│   ├── [export default fn] export default function Home() {
+├── pages/teachers.tsx
+│   ├── [export default fn] export default function TeachersPage() {
+├── utils/api.ts
+├── utils/apiClient.ts
+├── utils/auth.ts
+│   ├── [method] if (!token) {
+├── utils/authAPI.ts
+│   ├── [method] if (!token) {
+├── utils/classAPI.ts
+├── utils/disciplineAPI.ts
+├── utils/gradesAPI.ts
+├── utils/studentAPI.ts
+├── utils/teacherAPI.ts
+├── utils/userAPI.ts

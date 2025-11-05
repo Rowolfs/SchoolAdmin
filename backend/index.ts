@@ -13,22 +13,22 @@ const disciplineRouter = require('./routers/discipline.router');
 
 const app = express();
 
+
+
+// CORS — ставим ПЕРЕД cookieParser и express.json()
+const corsOptions = {
+  origin: ['http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // 👈 обязательно передай те же настройки
+
 // чтобы res.cookie и req.cookies работали
 app.use(cookieParser());
 app.use(express.json());
-
-// CORS с куками для всех роутов
-app.use(
-  cors({
-    origin: 'http://localhost:3000', // тот же origin, что и фронт
-    credentials: true, // разрешаем браузеру принимать и отправлять куки
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
-
-// необязательно, но корректно обрабатывать preflight
-app.options('*', cors());
 
 // Регистрация и логин
 app.use('/api/auth', authRouter);

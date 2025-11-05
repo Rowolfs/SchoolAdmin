@@ -1,9 +1,13 @@
 // frontend/utils/api.ts
 import axios from 'axios';
 
+const isServer = typeof window === 'undefined';
+
 // Создаём Axios-экземпляр
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api', // ваш бэкенд
+  baseURL: isServer
+    ? process.env.INTERNAL_API_URL || 'http://backend:5000/api'  // SSR (Next.js сервер)
+    : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api', // браузер// ваш бэкенд
   timeout: 5000,
   withCredentials: true,
 });
