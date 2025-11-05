@@ -6,16 +6,55 @@ const isServer = typeof window === 'undefined';
 // Создаём Axios-экземпляр
 const api = axios.create({
   baseURL: isServer
-    ? process.env.INTERNAL_API_URL || 'http://backend:5000/api'  // SSR (Next.js сервер)
-    : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api', // браузер// ваш бэкенд
+    ? process.env.INTERNAL_API_URL
+    : process.env.NEXT_PUBLIC_API_URL, // ✅ ИСПРАВИЛ localhost
   timeout: 5000,
   withCredentials: true,
 });
 
+// ✅ Request interceptor - добавляет токен автоматически
+api.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
+// ✅ Response interceptor - обрабатывает 401 ошибки
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      const currentPath = window.location.pathname;
+      
+      // Публичные страницы где редирект НЕ нужен
+      const publicPaths = [
+        '/auth/login',
+        '/auth/register',
+        '/'
+      ];
+      
+      const isPublicPage = publicPaths.some(path => currentPath.startsWith(path));
+      
+      if (!isPublicPage) {
+        console.log('❌ 401 error on protected page, redirecting to login');
+        localStorage.removeItem('token');
+        window.location.href = '/auth/login';
+      } else {
+        console.log('ℹ️ 401 error on public page, no redirect needed');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;
 
 // =========================
-//  Интерфейсы / типы
+//  Интерфейсы / типы  
 // =========================
 
 export interface User {
@@ -29,8 +68,8 @@ export interface User {
 }
 
 export interface Student {
-  id: number;           // Pupil.id
-  userId: number;       // User.id
+  id: number;
+  userId: number;
   classId: number | null;
   user: {
     id: number;
@@ -87,4 +126,3 @@ export const StudentAPI = {
 // =========================
 //  API для классов
 // =========================
-

@@ -10,8 +10,8 @@ const isServer = typeof window === 'undefined';
  */
 const apiClient = axios.create({
   baseURL: isServer
-    ? process.env.INTERNAL_API_URL || 'http://backend:5000/api'  // SSR (Next.js сервер)
-    : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api', // браузер// ваш бэкенд // <-- поменяйте на реальный адрес вашего бэкенда
+    ? process.env.INTERNAL_API_URL   // SSR (Next.js сервер)
+    : process.env.NEXT_PUBLIC_API_URL, // браузер// ваш бэкенд // <-- поменяйте на реальный адрес вашего бэкенда
   timeout: 5000,
   withCredentials: true,
 });
