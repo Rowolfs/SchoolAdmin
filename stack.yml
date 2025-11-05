@@ -27,7 +27,10 @@ services:
     image: school-admin-backend:latest
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/SchoolAdminDb
+      - DATABASE_URL="postgresql://postgres:postgres@localhost:5400/SchoolAdminDb"
+      - JWT_SECRET="RnH8RpXMAC63SvGLanBIorNXBNbnx1Gl"
+      - TEACHER_PASSWORD="n)dUs5zPSAc>Qn9"
+      - ADMIN_PASSWORD="SpwdyBOqu"
     networks:
       - school-network
     deploy:
