@@ -1,6 +1,6 @@
 // frontend/pages/dashboard/index.tsx
-import React from 'react'
-import { GetServerSideProps, InferGetServerSidePropsType } from 'next'
+import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import DashboardLayout from '@/components/layout/DashboardLayout'
 import api from '@/utils/api'
 
@@ -13,9 +13,54 @@ interface User {
   role: 'ADMIN' | 'TEACHER' | 'STUDENT'
 }
 
-export default function DashboardPage({
-  user,
-}: InferGetServerSidePropsType<typeof getServerSideProps>) {
+export default function DashboardPage() {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        // Проверяем токен в localStorage
+        const token = localStorage.getItem('token')
+        if (!token) {
+          router.push('/auth/login')
+          return
+        }
+
+        // Загружаем данные пользователя
+        const { data: userData } = await api.get<User>('/users/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        
+        console.log('✅ User loaded:', userData)
+        setUser(userData)
+      } catch (error) {
+        console.log('❌ Auth failed:', error)
+        localStorage.removeItem('token')
+        router.push('/auth/login')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadUser()
+  }, [router])
+
+  // Показываем загрузку пока проверяем авторизацию
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div>Загрузка...</div>
+      </div>
+    )
+  }
+
+  // Если пользователя нет - редирект уже происходит
+  if (!user) {
+    return null
+  }
+
   return (
     <DashboardLayout user={user}>
       <h1 className="text-2xl mb-4">
@@ -24,27 +69,4 @@ export default function DashboardPage({
       {/* ваши виджеты */}
     </DashboardLayout>
   )
-}
-
-export const getServerSideProps: GetServerSideProps<{
-  user: User
-}> = async (ctx) => {
-  const cookie = ctx.req.headers.cookie || ''
-  try {
-    // Берём пользователя сразу на сервере, через настроенный api-инстанс
-    const { data: user } = await api.get<User>('/users/me', {
-      headers: { Cookie: cookie },
-    })
-    console.log( { props: { user } } )
-    return { props: { user } }
-  } catch {
-    // Если не залогинен — редирект на логин
-    console.log("back to auth")
-    return {
-      redirect: {
-        destination: '/auth/login',
-        permanent: false,
-      },
-    }
-  }
 }
