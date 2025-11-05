@@ -17,7 +17,9 @@ const app = express();
 
 // CORS — ставим ПЕРЕД cookieParser и express.json()
 const corsOptions = {
-  origin: ['http://localhost:3000'],
+  origin: ['http://localhost:3000', // для локальной разработки
+           'http://45.149.235.33',  // для продакшена
+           'https://45.149.235.33'  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
