@@ -1,4 +1,3 @@
-cat > stack.yml << 'EOF'
 version: '3.9'
 
 services:
