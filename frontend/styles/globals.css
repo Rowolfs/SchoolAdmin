@@ -3,18 +3,18 @@
 /* CSS Variables for light/dark theme */
 
 :root {
---background: #000000;
---foreground: #ffffff;
+--background: #ffffff;
+--foreground: #000000;
 /* Auth select colors */
---auth-select-bg: #ffffff;
---auth-select-fg: #171717;
+--auth-select-bg: #000000;
+--auth-select-fg: #000000;
 }
 
 @media (prefers-color-scheme: dark) {
 :root {
---background: #0a0a0a;
+--background: #fdfdfd;
 --foreground: #000000;
---auth-select-bg: #0a0a0a;
+--auth-select-bg: #ffffff;
 --auth-select-fg: #000000;
 }
 }
