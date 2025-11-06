@@ -1,18 +1,33 @@
-- name: Deploy to Docker Swarm
-  uses: appleboy/ssh-action@master
-  with:
-    host: ${{ secrets.HOST }}
-    username: ${{ secrets.USERNAME }}
-    key: ${{ secrets.SSH_PRIVATE_KEY }}
-    script: |
-      cd ~/repos/SchoolAdmin
-      git pull origin main
-      
-      docker build -t school-admin-backend:latest ./backend
-      docker build -t school-admin-frontend:latest ./frontend
+name: Deploy SchoolAdmin to VPS  # ← Название workflow на верхнем уровне
 
-      # Деплой с твоим файлом
-      docker stack deploy -c stack.yml school-admin --with-registry-auth
-      
-      # Проверка
-      docker service ls --filter name=school-admin
+on:  # ← Триггеры на верхнем уровне
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:  # ← Обязательная секция jobs
+  deploy:
+    name: Deploy to Docker Swarm
+    runs-on: ubuntu-latest  # ← На чем запускается
+    
+    steps:  # ← Список шагов
+      - name: Checkout code  # ← Первый шаг
+        uses: actions/checkout@v4
+        
+      - name: Deploy to VPS  # ← Второй шаг
+        uses: appleboy/ssh-action@master
+        with:  # ← with на том же уровне что и uses
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/repos/SchoolAdmin
+            git pull origin main
+            
+            docker build -t school-admin-backend:latest ./backend
+            docker build -t school-admin-frontend:latest ./frontend
+            
+            # БЕЗ --with-registry-auth (локальные образы!)
+            docker stack deploy -c stack.yml school-admin
+            
+            docker service ls --filter name=school-admin
